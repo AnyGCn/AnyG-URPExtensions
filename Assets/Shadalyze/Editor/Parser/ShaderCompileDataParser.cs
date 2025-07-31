@@ -1,0 +1,46 @@
+using System;
+using System.Text;
+
+namespace Shadalyze.Editor.Parser
+{
+    public static class ShaderCompileDataParser
+    {
+        private const string vertMacro = "#ifdef VERTEX";
+        private const string fragMacro = "#ifdef FRAGMENT";
+        private const string endIfMacro = "#endif";
+        
+        public static bool ParseShader(byte[] bytes, out string vert, out string frag)
+        {
+            return ParseShader(Encoding.ASCII.GetString(bytes).Trim(), out vert, out frag);
+        }
+
+        public static string ParseComputeShader(byte[] bytes)
+        {
+            return ParseComputeShader(Encoding.ASCII.GetString(bytes).Trim());
+        }
+        
+        private static bool ParseShader(string compiledCode, out string vert, out string frag)
+        {
+            int vertexStartIndex = compiledCode.IndexOf(vertMacro, StringComparison.Ordinal);
+            int fragmentStartIndex = compiledCode.IndexOf(fragMacro, StringComparison.Ordinal);
+            if (vertexStartIndex == -1 || fragmentStartIndex == -1)
+            {
+                vert = null;
+                frag = null;
+                return false;
+            }
+
+            int lastEndIfIndex = compiledCode.LastIndexOf(endIfMacro, StringComparison.Ordinal);
+            frag = compiledCode.Substring(fragmentStartIndex + fragMacro.Length, lastEndIfIndex);
+            
+            vert = compiledCode.Substring(vertexStartIndex + vertMacro.Length, fragmentStartIndex);
+            vert = vert.Substring(0, vert.LastIndexOf(endIfMacro, StringComparison.Ordinal));
+            return true;
+        }
+        
+        private static string ParseComputeShader(string compiledCode)
+        {
+            return compiledCode;
+        }
+    }
+}
