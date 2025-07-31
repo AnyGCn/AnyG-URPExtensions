@@ -1,7 +1,22 @@
 {
   "dependencies": {
+    "com.anyg.shadalyze": {
+      "version": "file:com.anyg.shadalyze",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.deltation.mali-offline-compiler": {
+      "version": "https://github.com/Delt06/malioc-unity.git?path=Packages/com.deltation.mali-offline-compiler",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2"
+      },
+      "hash": "4dc8c82f7063c23fd0b1008cabf3c87c0262b322"
+    },
     "com.unity.burst": {
-      "version": "1.8.19",
+      "version": "1.8.21",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -25,7 +40,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.rider": {
-      "version": "3.0.35",
+      "version": "3.0.36",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -51,6 +66,13 @@
     },
     "com.unity.mathematics": {
       "version": "1.2.6",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.1",
       "depth": 1,
       "source": "registry",
       "dependencies": {},
