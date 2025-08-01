@@ -82,11 +82,11 @@ namespace Shadalyze.Editor.Wrapper
             out string[] keywordLists,
             out string[] remainingKeywords)
         {
-            object[] parameters = new object[] { maxEntries, filterKeywords, excludeCollection, null, null, null };
+            object[] parameters = new object[] { shader, maxEntries, filterKeywords, excludeCollection, null, null, null };
             GetShaderVariantEntriesFilteredFunc.Invoke(null, parameters);
-            passTypes = parameters[3] as int[];
-            keywordLists = parameters[4] as string[];
-            remainingKeywords = parameters[5] as string[];
+            passTypes = parameters[4] as int[];
+            keywordLists = parameters[5] as string[];
+            remainingKeywords = parameters[6] as string[];
         }
         
         /// <summary>

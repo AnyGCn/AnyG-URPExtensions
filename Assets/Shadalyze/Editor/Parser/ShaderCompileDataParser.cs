@@ -30,10 +30,14 @@ namespace Shadalyze.Editor.Parser
                 return false;
             }
 
-            int lastEndIfIndex = compiledCode.LastIndexOf(endIfMacro, StringComparison.Ordinal);
-            frag = compiledCode.Substring(fragmentStartIndex + fragMacro.Length, lastEndIfIndex);
+            int startIndex = fragmentStartIndex + fragMacro.Length;
+            int endIndex = compiledCode.LastIndexOf(endIfMacro, StringComparison.Ordinal);
+            frag = compiledCode.Substring(startIndex, endIndex - startIndex);
             
-            vert = compiledCode.Substring(vertexStartIndex + vertMacro.Length, fragmentStartIndex);
+            startIndex = vertexStartIndex + vertMacro.Length;
+            endIndex = fragmentStartIndex;
+            vert = compiledCode.Substring(startIndex, endIndex - startIndex);
+            
             vert = vert.Substring(0, vert.LastIndexOf(endIfMacro, StringComparison.Ordinal));
             return true;
         }
