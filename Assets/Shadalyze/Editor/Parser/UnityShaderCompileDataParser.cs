@@ -3,10 +3,10 @@ using System.Text;
 
 namespace Shadalyze.Editor.Parser
 {
-    public static class ShaderCompileDataParser
+    public static class UnityShaderCompileDataParser
     {
-        private const string vertMacro = "#ifdef VERTEX";
-        private const string fragMacro = "#ifdef FRAGMENT";
+        private const string vertMacro = "#ifdef VERTEX\n";
+        private const string fragMacro = "#ifdef FRAGMENT\n";
         private const string endIfMacro = "#endif";
         
         public static bool ParseShader(byte[] bytes, out string vert, out string frag)
@@ -21,6 +21,9 @@ namespace Shadalyze.Editor.Parser
         
         private static bool ParseShader(string compiledCode, out string vert, out string frag)
         {
+            // version 300 es would occur error when analyze by malioc.
+            compiledCode = compiledCode.Replace("#version 300 es", "#version 310 es");
+            
             int vertexStartIndex = compiledCode.IndexOf(vertMacro, StringComparison.Ordinal);
             int fragmentStartIndex = compiledCode.IndexOf(fragMacro, StringComparison.Ordinal);
             if (vertexStartIndex == -1 || fragmentStartIndex == -1)

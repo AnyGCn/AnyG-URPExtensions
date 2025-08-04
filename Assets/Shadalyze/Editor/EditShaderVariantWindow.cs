@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Shadalyze.Editor.Data;
+using Shadalyze.Editor.Manager;
 using Shadalyze.Editor.Wrapper;
 using UnityEditor;
 using UnityEngine;
@@ -12,55 +13,6 @@ namespace Shadalyze.Editor
     /// </summary>
     internal class EditShaderVariantWindow : EditorWindow
     {
-        [MenuItem("Assets/Shadalyze/Compile Shader", false)]
-        private static void CompileShaderVariantMenuCommand()
-        {
-            ShaderVariantCollection svc;
-            if (Selection.activeObject is Shader shader)
-            { 
-                svc = new ShaderVariantCollection();
-                var data = new PopupData
-                {
-                    shader = shader,
-                    collection = svc
-                };
-            
-                ShowAddVariantWindow(data);
-            }
-            else if (Selection.activeObject is Material material)
-            {
-                shader = material.shader;
-                if (shader == null)
-                {
-                    Debug.LogError("Material has no shader assigned.");
-                    return;
-                }
-
-                List<ShaderCompileData> compileDataList = new List<ShaderCompileData>();
-                ShaderCompileData.GetShaderCompileData(
-                    new ShaderVariantCollection.ShaderVariant(shader,
-                        UnityEngine.Rendering.PassType.ScriptableRenderPipeline,
-                        material.shaderKeywords), compileDataList);
-
-                foreach (var compileData in compileDataList)
-                {
-                    compileData.TryGetCompiledCode();
-                    compileData.SaveData();
-                }
-            }
-            else
-            {
-                Debug.LogError("Please select a Shader or Material to compile.");
-                return;
-            }
-        }
-        
-        [MenuItem("Assets/Shadalyze/Compile Shader", true)]
-        private static bool ValidateCompileShaderVariantMenuCommand()
-        {
-            return Selection.activeObject as Shader || Selection.activeObject as Material;
-        }
-        
         internal class PopupData
         {
             public Shader shader;
@@ -113,9 +65,9 @@ namespace Shadalyze.Editor
             ApplyKeywordFilter();
         }
 
-        public static void ShowAddVariantWindow(PopupData data)
+        public static void Show(PopupData data)
         {
-            var w = EditorWindow.GetWindow<EditShaderVariantWindow>(true, "Add shader " + data.shader.name + " variants to collection");
+            var w = EditorWindow.GetWindow<EditShaderVariantWindow>(true, "Analyze shader " + data.shader.name + " variants");
             w.Initialize(data);
         }
 
@@ -297,7 +249,6 @@ namespace Shadalyze.Editor
                 if (GUI.Button(rect, string.Format("Add {0} selected variants", m_SelectedVariants.Count)))
                 {
                     // Add the selected variants
-                    Undo.RecordObject(m_Data.collection, "Add variant");
                     for (var i = 0; i < m_SelectedVariants.Count; ++i)
                     {
                         var index = m_SelectedVariants[i];
@@ -305,14 +256,7 @@ namespace Shadalyze.Editor
                         m_Data.collection.Add(variant);
                     }
                     // Close our popup
-                    var variantsList = ShaderUtilWrapper.GetShaderVariantsFromCollections(m_Data.collection);
-                    List<ShaderCompileData> compileDataList = new List<ShaderCompileData>();
-                    ShaderCompileData.GetShaderCompileData(variantsList, compileDataList);
-                    foreach (var compileData in compileDataList)
-                    {
-                        compileData.TryGetCompiledCode();
-                    }
-                    
+                    ShaderCompileData.GetShaderCompileData(m_Data.collection, new List<ShaderCompileData>());
                     GameObject.DestroyImmediate(m_Data.collection);
                     Close();
                     GUIUtility.ExitGUI();

@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
+using Shadalyze.Editor.Manager;
 using Shadalyze.Editor.Parser;
+using Shadalyze.Editor.Wrapper;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -23,8 +22,9 @@ namespace Shadalyze.Editor.Data
         private string m_VertCode;
         private string m_FragCode;
 
-        public string vertexCode => m_VertCode;
-        public string fragmentCode => m_FragCode;
+        public string sha256 => m_SHA256;
+        public string vertCode => m_VertCode;
+        public string fragCode => m_FragCode;
         
         public ShaderCompileData(Shader shaderObject, int subshaderIndex, int passIndex, string[] shaderKeywords)
         {
@@ -36,6 +36,7 @@ namespace Shadalyze.Editor.Data
             m_SHA256 = null;
             m_VertCode = null;
             m_FragCode = null;
+            TryGetCompiledCode();
         }
 
         public ShaderCompileData(Shader shaderObject, ShaderSnippetData snippet, ShaderCompilerData variant) : this(
@@ -72,6 +73,11 @@ namespace Shadalyze.Editor.Data
             }
         }
         
+        public static void GetShaderCompileData(ShaderVariantCollection collection, [NotNull] List<ShaderCompileData> dataList)
+        {
+            GetShaderCompileData(ShaderUtilWrapper.GetShaderVariantsFromCollections(collection), dataList);
+        }
+        
         public bool TryGetCompiledCode()
         {
             if (!string.IsNullOrEmpty(m_VertCode) && !string.IsNullOrEmpty(m_FragCode))
@@ -80,14 +86,15 @@ namespace Shadalyze.Editor.Data
             var shaderData = ShaderUtil.GetShaderData(ShaderObject);
             var subshader = shaderData.GetSubshader(SubshaderIndex);
             var pass = subshader.GetPass(PassIndex);
-
             if (pass == null)
             {
                 Debug.Log($"Failed to get Shader {ShaderObject.name} subshader {SubshaderIndex} pass {PassIndex}");
                 return false;
             }
-
-            var variantCompileInfo = pass.CompileVariant(ShaderType.Vertex, ShaderKeywords, ShaderCompilerPlatform.GLES3x, BuildTarget.Android);
+            
+            PassName = pass.Name;
+            BuiltinShaderDefine[] keywordsForBuildTarget = ShaderUtil.GetShaderPlatformKeywordsForBuildTarget(ShaderCompilerPlatform.GLES3x, BuildTarget.Android, GraphicsTier.Tier3);
+            var variantCompileInfo = pass.CompileVariant(ShaderType.Vertex, ShaderKeywords, ShaderCompilerPlatform.GLES3x, BuildTarget.Android, keywordsForBuildTarget);
             if (!variantCompileInfo.Success)
             {
                 Debug.LogError("Failed to compile shader variant");
@@ -98,35 +105,13 @@ namespace Shadalyze.Editor.Data
                 return false;
             }
             
-            bool success = ShaderCompileDataParser.ParseShader(variantCompileInfo.ShaderData, out m_VertCode, out m_FragCode);
+            m_SHA256 = ShaderCompileDataManager.GetSHA256(variantCompileInfo.ShaderData);
+            if (ShaderCompileDataManager.IsShaderCompileCodeInCache(sha256)) return true;
+            bool success = UnityShaderCompileDataParser.ParseShader(variantCompileInfo.ShaderData, out m_VertCode, out m_FragCode);
             if (success)
-            {
-                using (var sha256 = SHA256.Create())
-                {
-                    m_SHA256 = BitConverter.ToString(sha256.ComputeHash(variantCompileInfo.ShaderData));
-                } 
-            }
+                ShaderCompileDataManager.DumpShaderCompileCodeToCache(sha256, vertCode, fragCode);
             
             return success;
-        }
-        
-        // 持久化数据
-        public void SaveData()
-        {
-            string directoryPath = $"{GlobalConstant.TempPath}/{ShaderObject.name.Replace('/', '-')}-sub{SubshaderIndex}-pass{PassIndex}-{PassName}";
-            Directory.CreateDirectory(directoryPath);
-            FileStream vertStream = File.Create($"{directoryPath}/{m_SHA256}.vert", m_VertCode.Length * sizeof(char));
-            using (StreamWriter writer = new StreamWriter(vertStream))
-            {
-                writer.Write(m_VertCode);
-            }
-            vertStream.Close();
-            FileStream fragStream = File.Create($"{directoryPath}/{m_SHA256}.frag", m_FragCode.Length * sizeof(char));
-            using (StreamWriter writer = new StreamWriter(fragStream))
-            {
-                writer.Write(m_FragCode);
-            }
-            fragStream.Close();
         }
     }
 }
