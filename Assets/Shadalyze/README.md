@@ -1,6 +1,8 @@
 # Shadalyze
 Analyze the performance of Unity shader by using Mali Offline Compiler, Package Developed on Unity 2022.3.
 
+This plugin includes the Mali Offline Compiler copied from Arm Performance Studio 2024.6 for convenience. If there is any infringement, please contact me for removal.
+
 ## How to use
 1. Assets -> Shadalyze -> Analyze Shader Performance ( Shader, ShaderVariantCollection, Material )
 2. After shader assets build, you can get the summary report.

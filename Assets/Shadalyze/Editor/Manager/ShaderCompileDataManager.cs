@@ -28,13 +28,13 @@ namespace Shadalyze.Editor.Manager
 
         internal static bool IsShaderCompileCodeInCache(string sha256)
         {
-            string fileName = $"{GlobalConstant.TempPath}/{sha256}";
+            string fileName = $"{GlobalVariable.CompileCodePath}/{sha256}";
             return File.Exists(fileName + ".vert") && File.Exists(fileName + ".frag");
         }
         
         internal static void DumpShaderCompileCodeToCache(string sha256, string vertCode, string fragCode)
         {
-            string fileName = $"{GlobalConstant.TempPath}/{sha256}";
+            string fileName = $"{GlobalVariable.CompileCodePath}/{sha256}";
             DumpToFile(fileName + ".vert", vertCode, vertCode.Length * sizeof(char));
             DumpToFile(fileName + ".frag", fragCode, fragCode.Length * sizeof(char));
         }
