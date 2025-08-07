@@ -8,43 +8,24 @@ namespace Shadalyze.Editor.Wrapper
     /// </summary>
     public static class MaliOfflineCompilerWrapper
     {
-        public static void Compile(string fileName)
+        public static bool Analyze(string fileName, out string output, out string errors)
         {
-            bool runShell = true;
-            ProcessStartInfo ps = new ProcessStartInfo(GlobalVariable.DefaultMaliocExePath, fileName)
+            using Process p = new Process();
+            p.StartInfo = new ProcessStartInfo(ShadalyzeGlobalSettings.Instance.MaliocExePath, fileName)
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                UseShellExecute = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = System.Text.Encoding.ASCII,
             };
             
-            using (Process p = new Process())
-            {
-                ps.UseShellExecute = runShell;
-                if (!runShell)
-                {
-                    ps.RedirectStandardOutput = true;
-                    ps.RedirectStandardError = true;
-                    ps.StandardOutputEncoding = System.Text.Encoding.ASCII;
-                }
-                p.StartInfo = ps;
-                p.Start();
-                p.WaitForExit();
-                if (!runShell)
-                {
-                    string output = p.StandardOutput.ReadToEnd().Trim();
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        UnityEngine.Debug.Log(string.Format("{0} Output: {1}", DateTime.Now, output));
-                    }
-
-                    string errors = p.StandardError.ReadToEnd().Trim();
-                    if (!string.IsNullOrEmpty(errors))
-                    {
-                        UnityEngine.Debug.Log(string.Format("{0} Output: {1}", DateTime.Now, errors));
-                    }
-                }
-            }
+            p.Start();
+            p.WaitForExit();
+            output = p.StandardOutput.ReadToEnd().Trim();
+            errors = p.StandardError.ReadToEnd().Trim();
+            return String.IsNullOrEmpty(errors);
         }
     }
 }

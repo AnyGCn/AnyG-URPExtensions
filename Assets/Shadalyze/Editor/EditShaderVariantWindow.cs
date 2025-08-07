@@ -56,19 +56,36 @@ namespace Shadalyze.Editor
             wantsMouseMove = true;
         }
 
-        private void Initialize(PopupData data)
+        private void Initialize(Shader shader, string[] initialKeywords)
         {
-            m_Data = data;
             m_SelectedKeywords = new List<string>();
             m_AvailableKeywords = new List<string>();
             m_SelectedVariants = new List<int>();
+            m_Data = new PopupData()
+            {
+                shader = shader,
+                collection = new ShaderVariantCollection(),
+            };
+
+            if (initialKeywords != null)
+            {
+                m_SelectedKeywords.AddRange(initialKeywords);
+                m_SelectedVariants.Add(0);
+            }
+            
             ApplyKeywordFilter();
         }
 
-        public static void Show(PopupData data)
+        private void OnDestroy()
         {
-            var w = EditorWindow.GetWindow<EditShaderVariantWindow>(true, "Analyze shader " + data.shader.name + " variants");
-            w.Initialize(data);
+            if (m_Data?.collection)
+                DestroyImmediate(m_Data.collection);
+        }
+
+        public static void Show(Shader shader, string[] initialKeywords)
+        {
+            var w = EditorWindow.GetWindow<EditShaderVariantWindow>(true, "Analyze shader " + shader.name + " variants");
+            w.Initialize(shader, initialKeywords);
         }
 
         void ApplyKeywordFilter()
@@ -256,8 +273,13 @@ namespace Shadalyze.Editor
                         m_Data.collection.Add(variant);
                     }
                     // Close our popup
-                    ShaderCompileData.GetShaderCompileData(m_Data.collection, new List<ShaderCompileData>());
-                    GameObject.DestroyImmediate(m_Data.collection);
+                    var compileRequests = new List<ShaderCompileRequest>();
+                    ShaderCompileRequest.GetShaderCompileData(m_Data.collection, compileRequests);
+                    foreach (var compileRequest in compileRequests)
+                    {
+                        compileRequest.Compile();
+                        Debug.Log(compileRequest.Analyze());
+                    }
                     Close();
                     GUIUtility.ExitGUI();
                 }

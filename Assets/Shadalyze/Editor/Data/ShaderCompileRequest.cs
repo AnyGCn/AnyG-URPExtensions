@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -11,7 +12,7 @@ using UnityEngine.Rendering;
 
 namespace Shadalyze.Editor.Data
 {
-    public struct ShaderCompileData
+    public struct ShaderCompileRequest
     {
         public readonly Shader ShaderObject;
         public readonly int SubshaderIndex;
@@ -22,11 +23,7 @@ namespace Shadalyze.Editor.Data
         private string m_VertCode;
         private string m_FragCode;
 
-        public string sha256 => m_SHA256;
-        public string vertCode => m_VertCode;
-        public string fragCode => m_FragCode;
-        
-        public ShaderCompileData(Shader shaderObject, int subshaderIndex, int passIndex, string[] shaderKeywords)
+        public ShaderCompileRequest(Shader shaderObject, int subshaderIndex, int passIndex, string[] shaderKeywords)
         {
             ShaderObject = shaderObject;
             SubshaderIndex = subshaderIndex;
@@ -36,17 +33,18 @@ namespace Shadalyze.Editor.Data
             m_SHA256 = null;
             m_VertCode = null;
             m_FragCode = null;
-            TryGetCompiledCode();
         }
 
-        public ShaderCompileData(Shader shaderObject, ShaderSnippetData snippet, ShaderCompilerData variant) : this(
+        public ShaderCompileRequest(Shader shaderObject, ShaderSnippetData snippet, ShaderCompilerData variant) : this(
             shaderObject, (int)snippet.pass.SubshaderIndex, (int)snippet.pass.PassIndex,
             variant.shaderKeywordSet.GetShaderKeywords().Select(sk => sk.name).ToArray())
         {
 
         }
+
+        private static readonly ShaderTagId LightMode = new ShaderTagId("LightMode");
         
-        public static void GetShaderCompileData(ShaderVariantCollection.ShaderVariant variant, [NotNull] List<ShaderCompileData> dataList)
+        public static void GetShaderCompileData(ShaderVariantCollection.ShaderVariant variant, [NotNull] List<ShaderCompileRequest> dataList)
         {
             Shader shader = variant.shader;
             var shaderData = ShaderUtil.GetShaderData(shader);
@@ -58,14 +56,14 @@ namespace Shadalyze.Editor.Data
                 for(int passIndex = 0; passIndex < subshader.PassCount; ++passIndex)
                 {
                     var pass = subshader.GetPass(passIndex);
-                    if (pass == null)
+                    if (pass == null || !ShadalyzeGlobalSettings.Instance.lightModeWhiteList.Contains(pass.FindTagValue(LightMode)))
                         continue;
-                    dataList.Add(new ShaderCompileData(shader, subshaderIndex, passIndex, variant.keywords));
+                    dataList.Add(new ShaderCompileRequest(shader, subshaderIndex, passIndex, variant.keywords));
                 }
             }
         }
         
-        public static void GetShaderCompileData(List<ShaderVariantCollection.ShaderVariant> variant, [NotNull] List<ShaderCompileData> dataList)
+        public static void GetShaderCompileData(List<ShaderVariantCollection.ShaderVariant> variant, [NotNull] List<ShaderCompileRequest> dataList)
         {
             foreach (var shaderVariant in variant)
             {
@@ -73,12 +71,12 @@ namespace Shadalyze.Editor.Data
             }
         }
         
-        public static void GetShaderCompileData(ShaderVariantCollection collection, [NotNull] List<ShaderCompileData> dataList)
+        public static void GetShaderCompileData(ShaderVariantCollection collection, [NotNull] List<ShaderCompileRequest> dataList)
         {
             GetShaderCompileData(ShaderUtilWrapper.GetShaderVariantsFromCollections(collection), dataList);
         }
         
-        public bool TryGetCompiledCode()
+        public bool Compile()
         {
             if (!string.IsNullOrEmpty(m_VertCode) && !string.IsNullOrEmpty(m_FragCode))
                 return true;
@@ -106,12 +104,51 @@ namespace Shadalyze.Editor.Data
             }
             
             m_SHA256 = ShaderCompileDataManager.GetSHA256(variantCompileInfo.ShaderData);
-            if (ShaderCompileDataManager.IsShaderCompileCodeInCache(sha256)) return true;
-            bool success = UnityShaderCompileDataParser.ParseShader(variantCompileInfo.ShaderData, out m_VertCode, out m_FragCode);
+            if (ShaderCompileDataManager.IsShaderCompileCodeInCache(m_SHA256)) return true;
+            bool success = UnityShaderCompileDataParser.ParseShader(variantCompileInfo.ShaderData, out var vertCode, out var fragCode);
             if (success)
-                ShaderCompileDataManager.DumpShaderCompileCodeToCache(sha256, vertCode, fragCode);
+                ShaderCompileDataManager.DumpShaderCompileCodeToCache(m_SHA256, vertCode, fragCode);
             
+            m_VertCode = vertCode;
+            m_FragCode = fragCode;
             return success;
+        }
+
+        public string Analyze()
+        {
+            if (MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{m_SHA256}.vert",
+                    out var vertexAnalysisReport, out var _) &&
+                MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{m_SHA256}.frag",
+                    out var fragAnalysisReport, out var _))
+            {
+                string result = default;
+
+                result += $"Shader: {ShaderObject.name}\n";
+
+                result += $"PassName: {PassName}\n";
+                
+                result += $"Keywords: {String.Join(' ', ShaderKeywords)}\n\n";
+                
+                result += "///////////////////////////////////////\n" +
+                          "//////// Vertex Analysis Report ///////\n" +
+                          "///////////////////////////////////////\n";
+                
+                result += vertexAnalysisReport;
+                
+                result += "\n\n";
+                
+                result += "///////////////////////////////////////\n" +
+                          "/////// Fragment Analysis Report //////\n" +
+                          "///////////////////////////////////////\n";
+                
+                result += fragAnalysisReport;
+                
+                result += "\n\n";
+                
+                return result;
+            }
+            
+            return null;
         }
     }
 }

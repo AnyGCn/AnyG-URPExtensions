@@ -11,29 +11,24 @@ namespace Shadalyze.Editor
         private static void CompileShaderVariantMenuCommand()
         {
             if (Selection.activeObject is Shader shader)
-            { 
-                EditShaderVariantWindow.Show(new EditShaderVariantWindow.PopupData
-                {
-                    shader = shader,
-                    collection = new ShaderVariantCollection()
-                });
+            {
+                EditShaderVariantWindow.Show(shader, null);
             }
             else if (Selection.activeObject is Material material)
             {
                 shader = material.shader;
-                if (shader == null)
-                {
-                    Debug.LogError("Material has no shader assigned.");
-                    return;
-                }
-
-                ShaderCompileData.GetShaderCompileData(new ShaderVariantCollection.ShaderVariant(shader,
-                    UnityEngine.Rendering.PassType.ScriptableRenderPipeline,
-                    material.shaderKeywords), new List<ShaderCompileData>());
+                if (shader != null)
+                    EditShaderVariantWindow.Show(shader, material.shaderKeywords);
             }
             else if (Selection.activeObject is ShaderVariantCollection svc)
             {
-                ShaderCompileData.GetShaderCompileData(svc, new List<ShaderCompileData>());
+                var compileRequests = new List<ShaderCompileRequest>();
+                ShaderCompileRequest.GetShaderCompileData(svc, compileRequests);
+                foreach (var compileRequest in compileRequests)
+                {
+                    compileRequest.Compile();
+                    Debug.Log(compileRequest.Analyze());
+                }
             }
             else
             {

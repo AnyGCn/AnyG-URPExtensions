@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using Shadalyze.Editor.Data;
 using UnityEngine;
 
@@ -21,6 +22,11 @@ namespace Shadalyze.Editor.Manager
             writer.Write(content);
         }
 
+        internal static string GetSHA256(string data)
+        {
+            return GetSHA256(Encoding.UTF8.GetBytes(data));
+        }
+        
         internal static string GetSHA256(byte[] data)
         {
             return BitConverter.ToString(encoderSHA256.ComputeHash(data)).Replace("-","");
@@ -28,13 +34,13 @@ namespace Shadalyze.Editor.Manager
 
         internal static bool IsShaderCompileCodeInCache(string sha256)
         {
-            string fileName = $"{GlobalVariable.CompileCodePath}/{sha256}";
+            string fileName = $"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}";
             return File.Exists(fileName + ".vert") && File.Exists(fileName + ".frag");
         }
         
         internal static void DumpShaderCompileCodeToCache(string sha256, string vertCode, string fragCode)
         {
-            string fileName = $"{GlobalVariable.CompileCodePath}/{sha256}";
+            string fileName = $"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}";
             DumpToFile(fileName + ".vert", vertCode, vertCode.Length * sizeof(char));
             DumpToFile(fileName + ".frag", fragCode, fragCode.Length * sizeof(char));
         }
