@@ -131,9 +131,9 @@ namespace Shadalyze.Editor.Data
         public string Analyze()
         {
             if (MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}.vert",
-                    out var vertexAnalysisReport, out var _) &&
+                    out var vertexAnalysisReport) &&
                 MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}.frag",
-                    out var fragAnalysisReport, out var _))
+                    out var fragAnalysisReport))
             {
                 string result = default;
 

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Shadalyze.Editor.Wrapper;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace Shadalyze.Editor
 {
@@ -18,7 +20,7 @@ namespace Shadalyze.Editor
     {
         public static readonly string ProjectPath = Path.GetDirectoryName(Application.dataPath);
         public static readonly string CompileCodePath = $"{ProjectPath}/Temp/Shadalyze/CompiledCode/";
-        public static readonly string AnalyzeJsonPath = $"{ProjectPath}/Temp/Shadalyze/AnalyzeResult/";
+        public static readonly string AnalyzeResultPath = $"{ProjectPath}/Temp/Shadalyze/AnalyzeResult/";
         private static string PackageRelativePath;
         public static string SettingsPath { get; private set; }
         public static string DefaultMaliocExePath  { get; private set; }
@@ -36,7 +38,7 @@ namespace Shadalyze.Editor
                     DefaultMaliocExePath = $"{ProjectPath}\\{PackageRelativePath}\\mali_offline_compiler~\\malioc.exe";
                     _instance = AssetDatabase.LoadAssetAtPath<ShadalyzeGlobalSettings>(SettingsPath);
                     Directory.CreateDirectory(CompileCodePath);
-                    Directory.CreateDirectory(AnalyzeJsonPath);
+                    Directory.CreateDirectory(AnalyzeResultPath);
                     if (_instance == null)
                     {
                         _instance = CreateInstance<ShadalyzeGlobalSettings>();
@@ -66,11 +68,18 @@ namespace Shadalyze.Editor
             }
         }
         
+        public MaliDeviceType BaselineDevice => baselineDevice;
+        
         public ShaderAnalysisLevel ShaderAnalysisLevel => shaderAnalysisLevel;
         
         public string MaliocExePath => String.IsNullOrEmpty(customMaliocExePath) ? DefaultMaliocExePath : customMaliocExePath;
 
         internal HashSet<ShaderTagId> lightModeWhiteList;
+        
+        [FormerlySerializedAs("analysisDevice")]
+        [SerializeField]
+        [Tooltip("Controls which shaders will be analyzed in shader build process.")]
+        private MaliDeviceType baselineDevice = MaliDeviceType.Immortalis_G715;
         
         [SerializeField]
         [Tooltip("Controls which shaders will be analyzed in shader build process.")]
