@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Shadalyze.Editor
 {
-    public class ShaderBuildProcessor : IPreprocessShaders, IPreprocessBuildWithReport, IPostprocessBuildWithReport
+    internal class ShaderBuildProcessor : IPreprocessShaders, IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
         public static List<ShaderCompileRequest> shaderCompilerDataList = new List<ShaderCompileRequest>();
         

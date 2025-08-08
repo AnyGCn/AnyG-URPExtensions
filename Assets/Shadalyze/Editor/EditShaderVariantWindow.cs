@@ -278,7 +278,9 @@ namespace Shadalyze.Editor
                     foreach (var compileRequest in compileRequests)
                     {
                         compileRequest.Compile();
-                        string reportPath = compileRequest.Analyze();
+                        string result = compileRequest.Analyze();
+                        string reportPath = $"{ShadalyzeGlobalSettings.CompileCodePath}/{compileRequest.ShaderObject.name.Replace('/', '-')}-{compileRequest.PassName}-{compileRequest.sha256}.txt";
+                        ShaderCompileDataManager.DumpToFile(reportPath, result, result.Length);
                         if (!string.IsNullOrEmpty(reportPath))
                             Application.OpenURL("file://" + reportPath);
                     }

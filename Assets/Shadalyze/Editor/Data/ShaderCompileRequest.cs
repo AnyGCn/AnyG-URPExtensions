@@ -12,17 +12,18 @@ using UnityEngine.Rendering;
 
 namespace Shadalyze.Editor.Data
 {
-    public struct ShaderCompileRequest
+    internal struct ShaderCompileRequest
     {
         public readonly Shader ShaderObject;
         public readonly int SubshaderIndex;
         public readonly int PassIndex;
         public readonly string[] ShaderKeywords;
         public string PassName;
-        private string m_SHA256;
-        private string m_VertCode;
-        private string m_FragCode;
-
+        public string sha256 { get; private set; }
+        public string VertCode { get; private set; }
+        public string FragCode { get; private set; }
+        public string AnalyzeResult { get; private set; }
+        
         public ShaderCompileRequest(Shader shaderObject, int subshaderIndex, int passIndex, string passName, string[] shaderKeywords)
         {
             ShaderObject = shaderObject;
@@ -30,9 +31,10 @@ namespace Shadalyze.Editor.Data
             PassIndex = passIndex;
             ShaderKeywords = shaderKeywords;
             PassName = passName;
-            m_SHA256 = null;
-            m_VertCode = null;
-            m_FragCode = null;
+            sha256 = null;
+            VertCode = null;
+            FragCode = null;
+            AnalyzeResult = null;
         }
 
         public ShaderCompileRequest(Shader shaderObject, ShaderSnippetData snippet, ShaderCompilerData variant) : this(
@@ -82,7 +84,7 @@ namespace Shadalyze.Editor.Data
         /// <returns> success flag. </returns>
         public bool Compile()
         {
-            if (!string.IsNullOrEmpty(m_VertCode) && !string.IsNullOrEmpty(m_FragCode))
+            if (!string.IsNullOrEmpty(this.VertCode) && !string.IsNullOrEmpty(this.FragCode))
                 return true;
             
             var shaderData = ShaderUtil.GetShaderData(ShaderObject);
@@ -107,30 +109,30 @@ namespace Shadalyze.Editor.Data
             }
             
             // TODO: There is no need to compute sha256 here properly, the most cost function is compiling variant but there are no good way to deduplication before compiling it.
-            m_SHA256 = ShaderCompileDataManager.GetSHA256(variantCompileInfo.ShaderData);
-            if (ShaderCompileDataManager.IsShaderCompileCodeInCache(m_SHA256)) return true;
+            sha256 = ShaderCompileDataManager.GetSHA256(variantCompileInfo.ShaderData);
+            if (ShaderCompileDataManager.IsShaderCompileCodeInCache(sha256)) return true;
             bool success = UnityShaderCompileDataParser.ParseShader(variantCompileInfo.ShaderData, out var vertCode, out var fragCode);
             if (success)
             {
-                string path = $"{ShadalyzeGlobalSettings.CompileCodePath}/{m_SHA256}";
+                string path = $"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}";
                 ShaderCompileDataManager.DumpToFile(path + ".vert", vertCode, vertCode.Length * sizeof(char));
                 ShaderCompileDataManager.DumpToFile(path + ".frag", fragCode, fragCode.Length * sizeof(char));
             }
             
-            m_VertCode = vertCode;
-            m_FragCode = fragCode;
+            this.VertCode = vertCode;
+            this.FragCode = fragCode;
             return success;
         }
 
         /// <summary>
-        /// Get the analysis report file path of the shader.
+        /// Get the analysis report text.
         /// </summary>
-        /// <returns> file path of the analysis report, return null if analysis is failed. </returns>
+        /// <returns> The text of analysis report, return null if analysis is failed. </returns>
         public string Analyze()
         {
-            if (MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{m_SHA256}.vert",
+            if (MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}.vert",
                     out var vertexAnalysisReport, out var _) &&
-                MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{m_SHA256}.frag",
+                MaliOfflineCompilerWrapper.Analyze($"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}.frag",
                     out var fragAnalysisReport, out var _))
             {
                 string result = default;
@@ -157,9 +159,9 @@ namespace Shadalyze.Editor.Data
                 
                 result += "\n\n";
                 
-                string filePath = $"{ShadalyzeGlobalSettings.CompileCodePath}/{ShaderObject.name.Replace('/', '-')}-{PassName}-{m_SHA256}.txt";
-                ShaderCompileDataManager.DumpToFile(filePath, result, result.Length);
-                return filePath;
+                AnalyzeResult = result;
+
+                return AnalyzeResult;
             }
             
             return null;

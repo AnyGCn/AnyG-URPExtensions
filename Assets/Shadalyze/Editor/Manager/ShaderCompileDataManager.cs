@@ -16,7 +16,7 @@ namespace Shadalyze.Editor.Manager
         
         internal static void DumpToFile(string filePath, string content, int bufferSize)
         {
-            using var fileStream = new FileStream($"{filePath}", FileMode.Create, FileAccess.Write, FileShare.None, bufferSize);
+            using var fileStream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, bufferSize);
             using StreamWriter writer = new StreamWriter(fileStream);
             writer.Write(content);
         }
