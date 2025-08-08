@@ -278,7 +278,9 @@ namespace Shadalyze.Editor
                     foreach (var compileRequest in compileRequests)
                     {
                         compileRequest.Compile();
-                        Debug.Log(compileRequest.Analyze());
+                        string reportPath = compileRequest.Analyze();
+                        if (!string.IsNullOrEmpty(reportPath))
+                            Application.OpenURL("file://" + reportPath);
                     }
                     Close();
                     GUIUtility.ExitGUI();

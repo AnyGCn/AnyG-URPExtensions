@@ -35,6 +35,8 @@ namespace Shadalyze.Editor
                     SettingsPath = $"{PackageRelativePath}/{nameof(ShadalyzeGlobalSettings)}.asset";
                     DefaultMaliocExePath = $"{ProjectPath}\\{PackageRelativePath}\\mali_offline_compiler~\\malioc.exe";
                     _instance = AssetDatabase.LoadAssetAtPath<ShadalyzeGlobalSettings>(SettingsPath);
+                    Directory.CreateDirectory(CompileCodePath);
+                    Directory.CreateDirectory(AnalyzeJsonPath);
                     if (_instance == null)
                     {
                         _instance = CreateInstance<ShadalyzeGlobalSettings>();
@@ -46,6 +48,12 @@ namespace Shadalyze.Editor
                 
                 return _instance;
             }
+        }
+
+        public static void Initialize()
+        {
+            var instance = ShadalyzeGlobalSettings.Instance;
+            instance.Init();
         }
         
         private void Init()

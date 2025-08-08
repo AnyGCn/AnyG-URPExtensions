@@ -14,14 +14,13 @@ namespace Shadalyze.Editor.Manager
     {
         private static SHA256 encoderSHA256 = SHA256.Create();
         
-        private static void DumpToFile(string fileName, string content, int bufferSize)
+        internal static void DumpToFile(string filePath, string content, int bufferSize)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(fileName));
-            using var fileStream = new FileStream($"{fileName}", FileMode.Create, FileAccess.Write, FileShare.None, bufferSize);
+            using var fileStream = new FileStream($"{filePath}", FileMode.Create, FileAccess.Write, FileShare.None, bufferSize);
             using StreamWriter writer = new StreamWriter(fileStream);
             writer.Write(content);
         }
-
+        
         internal static string GetSHA256(string data)
         {
             return GetSHA256(Encoding.UTF8.GetBytes(data));
@@ -31,18 +30,11 @@ namespace Shadalyze.Editor.Manager
         {
             return BitConverter.ToString(encoderSHA256.ComputeHash(data)).Replace("-","");
         }
-
-        internal static bool IsShaderCompileCodeInCache(string sha256)
-        {
-            string fileName = $"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}";
-            return File.Exists(fileName + ".vert") && File.Exists(fileName + ".frag");
-        }
         
-        internal static void DumpShaderCompileCodeToCache(string sha256, string vertCode, string fragCode)
+        internal static bool IsShaderCompileCodeInCache(string fileName)
         {
-            string fileName = $"{ShadalyzeGlobalSettings.CompileCodePath}/{sha256}";
-            DumpToFile(fileName + ".vert", vertCode, vertCode.Length * sizeof(char));
-            DumpToFile(fileName + ".frag", fragCode, fragCode.Length * sizeof(char));
+            string path = $"{ShadalyzeGlobalSettings.CompileCodePath}/{fileName}";
+            return File.Exists(path + ".vert") && File.Exists(path + ".frag");
         }
     }
 }

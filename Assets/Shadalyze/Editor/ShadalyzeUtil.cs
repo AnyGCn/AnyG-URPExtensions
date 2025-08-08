@@ -10,6 +10,7 @@ namespace Shadalyze.Editor
         [MenuItem("Assets/Shadalyze/Compile Shader", false)]
         private static void CompileShaderVariantMenuCommand()
         {
+            ShadalyzeGlobalSettings.Initialize();
             if (Selection.activeObject is Shader shader)
             {
                 EditShaderVariantWindow.Show(shader, null);
@@ -27,7 +28,9 @@ namespace Shadalyze.Editor
                 foreach (var compileRequest in compileRequests)
                 {
                     compileRequest.Compile();
-                    Debug.Log(compileRequest.Analyze());
+                    string reportPath = compileRequest.Analyze();
+                    if (!string.IsNullOrEmpty(reportPath))
+                        Application.OpenURL("file://" + reportPath);
                 }
             }
             else

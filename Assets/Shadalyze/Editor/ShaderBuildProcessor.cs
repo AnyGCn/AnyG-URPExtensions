@@ -15,6 +15,7 @@ namespace Shadalyze.Editor
         public void OnPreprocessBuild(BuildReport report)
         {
             if (ShadalyzeGlobalSettings.Instance.ShaderAnalysisLevel == ShaderAnalysisLevel.Disabled) return;
+            ShadalyzeGlobalSettings.Initialize();
         }
 
         public void OnPostprocessBuild(BuildReport report)
