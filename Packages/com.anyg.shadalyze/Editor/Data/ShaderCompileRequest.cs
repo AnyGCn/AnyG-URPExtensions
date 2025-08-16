@@ -55,10 +55,10 @@ namespace Shadalyze.Editor.Data
                 var subshader = shaderData.GetSubshader(subshaderIndex);
                 if (subshader == null)
                     continue;
-                for(int passIndex = 0; passIndex < subshader.PassCount; ++passIndex)
+                for (int passIndex = 0; passIndex < subshader.PassCount; ++passIndex)
                 {
                     var pass = subshader.GetPass(passIndex);
-                    if (pass == null || !ShadalyzeGlobalSettings.Instance.lightModeWhiteList.Contains(pass.FindTagValue(LightMode)))
+                    if (pass == null || !ShadalyzeGlobalSettings.Instance.lightModes.Contains(pass.FindTagValue(LightMode)))
                         continue;
                     dataList.Add(new ShaderCompileRequest(shader, subshaderIndex, passIndex, pass.Name, variant.keywords));
                 }

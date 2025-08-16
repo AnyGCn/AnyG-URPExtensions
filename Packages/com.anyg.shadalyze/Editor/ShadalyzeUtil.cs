@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Shadalyze.Editor.Data;
 using Shadalyze.Editor.Manager;
 using UnityEditor;
@@ -11,7 +12,6 @@ namespace Shadalyze.Editor
         [MenuItem("Assets/Shadalyze/Compile Shader", false)]
         private static void CompileShaderVariantMenuCommand()
         {
-            ShadalyzeGlobalSettings.Initialize();
             if (Selection.activeObject is Shader shader)
             {
                 EditShaderVariantWindow.Show(shader, null);
@@ -47,6 +47,12 @@ namespace Shadalyze.Editor
         private static bool ValidateCompileShaderVariantMenuCommand()
         {
             return Selection.activeObject as Shader || Selection.activeObject as Material || Selection.activeObject as ShaderVariantCollection;
+        }
+
+        [MenuItem("Shadalyze/Test String")]
+        private static void TestString()
+        {
+            Debug.Log(Path.GetFullPath("Packages/com.anyg.shadalyze/Editor/ShadalyzeUtil.cs"));
         }
     }
 }

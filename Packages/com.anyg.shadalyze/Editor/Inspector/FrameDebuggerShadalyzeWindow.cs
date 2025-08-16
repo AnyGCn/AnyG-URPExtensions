@@ -40,7 +40,6 @@ namespace Shadalyze.Editor
                     if (!String.IsNullOrEmpty(eventData.m_RealShaderName))
                     {
                         // draw pass
-                        ShadalyzeGlobalSettings.Initialize();
                         var compileRequest = new ShaderCompileRequest(Shader.Find(eventData.m_RealShaderName),
                             eventData.m_SubShaderIndex, eventData.m_ShaderPassIndex, eventData.m_PassName, eventData.shaderKeywords);
                         compileRequest.Compile();
@@ -75,7 +74,7 @@ namespace Shadalyze.Editor
             }
             bool enabledTemp = GUI.enabled;
             Color backgroundColorTemp = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
+            GUI.backgroundColor = new Color(0.0f, 0.0f, 0.0f, 1.0f);
             GUI.enabled = true;
 
             Rect rect = new Rect(0, 20, position.width, position.height);

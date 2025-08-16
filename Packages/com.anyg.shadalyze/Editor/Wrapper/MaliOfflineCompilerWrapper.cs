@@ -52,7 +52,7 @@ namespace Shadalyze.Editor.Wrapper
         public static bool Analyze(string fileName, out string output)
         {
             using Process p = new Process();
-            p.StartInfo = new ProcessStartInfo(ShadalyzeGlobalSettings.Instance.MaliocExePath)
+            p.StartInfo = new ProcessStartInfo(ShadalyzeGlobalSettings.MaliocExePath)
             {
                 ArgumentList = { fileName, $"-c {ShadalyzeGlobalSettings.Instance.BaselineDevice.ToString().Replace('_', '-')}" },
                 WindowStyle = ProcessWindowStyle.Hidden,

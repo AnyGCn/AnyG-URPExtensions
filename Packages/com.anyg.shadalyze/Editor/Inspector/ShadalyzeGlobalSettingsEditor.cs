@@ -10,18 +10,13 @@ namespace Shadalyze.Editor
     [CustomEditor(typeof(ShadalyzeGlobalSettings))]
     internal class ShadalyzeGlobalSettingsEditor : UnityEditor.Editor
     {
-        void OnEnable()
-        {
-            ShadalyzeGlobalSettings.Initialize();
-        }
-        
         protected override void OnHeaderGUI() {}
         
         public override void OnInspectorGUI()
         {
             EmbeddedToolLocation("Compiled Code", ShadalyzeGlobalSettings.CompileCodePath);
             EmbeddedToolLocation("Analyze Result", ShadalyzeGlobalSettings.AnalyzeResultPath);
-            EmbeddedToolLocation("Default Malioc", ShadalyzeGlobalSettings.DefaultMaliocExePath);
+            EmbeddedToolLocation("Default Malioc", ShadalyzeGlobalSettings.MaliocExePath);
             base.OnInspectorGUI();
         }
         
