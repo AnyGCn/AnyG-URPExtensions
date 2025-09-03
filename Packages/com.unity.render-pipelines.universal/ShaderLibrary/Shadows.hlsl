@@ -51,6 +51,7 @@ SCREENSPACE_TEXTURE(_ScreenSpaceShadowmapTexture);
 
 TEXTURE2D_SHADOW(_MainLightShadowmapTexture);
 TEXTURE2D_SHADOW(_AdditionalLightsShadowmapTexture);
+TEXTURE2D_SHADOW(_CachedShadowMapTexture);
 SAMPLER_CMP(sampler_LinearClampCompare);
 
 // GLES3 causes a performance regression in some devices when using CBUFFER.
@@ -61,6 +62,8 @@ CBUFFER_START(LightShadows)
 // Last cascade is initialized with a no-op matrix. It always transforms
 // shadow coord to half3(0, 0, NEAR_PLANE). We use this trick to avoid
 // branching since ComputeCascadeIndex can return cascade index = MAX_SHADOW_CASCADES
+float4x4    _CachedWorldToShadow;
+
 float4x4    _MainLightWorldToShadow[MAX_SHADOW_CASCADES + 1];
 float4      _CascadeShadowSplitSpheres0;
 float4      _CascadeShadowSplitSpheres1;
@@ -328,6 +331,7 @@ float4 TransformWorldToShadowCoord(float3 positionWS)
     #endif
     
     float4 shadowCoord = float4(mul(_MainLightWorldToShadow[cascadeIndex], float4(positionWS, 1.0)).xyz, 0.0);
+    shadowCoord = float4(mul(_CachedWorldToShadow, float4(positionWS, 1.0)).xyz, 0.0);
 #endif
     return shadowCoord;
 }
@@ -341,6 +345,7 @@ half MainLightRealtimeShadow(float4 shadowCoord)
     #else
         ShadowSamplingData shadowSamplingData = GetMainLightShadowSamplingData();
         half4 shadowParams = GetMainLightShadowParams();
+        return SampleShadowmap(TEXTURE2D_ARGS(_CachedShadowMapTexture, sampler_LinearClampCompare), shadowCoord, shadowSamplingData, shadowParams, false);
         return SampleShadowmap(TEXTURE2D_ARGS(_MainLightShadowmapTexture, sampler_LinearClampCompare), shadowCoord, shadowSamplingData, shadowParams, false);
     #endif
 }
