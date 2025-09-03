@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 [RequireComponent(typeof(Camera))]
 [RequireComponent(typeof(Light))]
@@ -36,6 +37,19 @@ public partial class CachedShadowCamera : MonoBehaviour
         shadowCastCamera.orthographicSize = shadowDistance;
         shadowCastCamera.farClipPlane = 2 * shadowDistance;
         shadowCastCamera.targetTexture = cachedShadowMap;
+        shadowCastCamera.targetDisplay = 1;
+        shadowCastCamera.allowHDR = false;
+        shadowCastCamera.allowMSAA = false;
+        shadowCastCamera.allowDynamicResolution = false;
+        shadowCastCamera.SetVolumeFrameworkUpdateMode(VolumeFrameworkUpdateMode.ViaScripting);
+        
+        UniversalAdditionalCameraData data = shadowCastCamera.GetUniversalAdditionalCameraData();
+        data.antialiasing = AntialiasingMode.None;
+        data.renderPostProcessing = false;
+        data.renderShadows = false;
+        data.requiresColorTexture = false;
+        data.requiresDepthTexture = false;
+        data.allowHDROutput = false;
     }
 
     private void OnDrawGizmosSelected()
@@ -44,13 +58,9 @@ public partial class CachedShadowCamera : MonoBehaviour
         Gizmos.DrawWireSphere(shadowCenter.position, shadowDistance);
     }
 
-    public void Update()
-    {
-        
-    }
-
     private void OnDisable()
     {
+        shadowCastCamera.targetTexture = null;
         CoreUtils.Destroy(cachedShadowMap);
     }
 }
