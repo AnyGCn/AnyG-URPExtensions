@@ -1,0 +1,6 @@
+[submodule "Packages/BrgContainer"]
+	path = Packages/BrgContainer
+	url = git@github.com:AnyGCn/BrgContainer.git
+[submodule "Packages/Shadalyze"]
+	path = Packages/Shadalyze
+	url = git@github.com:AnyGCn/Unity-Malioc-Shadalyze.git
