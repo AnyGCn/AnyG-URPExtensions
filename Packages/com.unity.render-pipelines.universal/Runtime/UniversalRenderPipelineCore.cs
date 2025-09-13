@@ -734,6 +734,11 @@ namespace UnityEngine.Rendering.Universal
         /// </summary>
         internal TaaPersistentData taaPersistentData;
 
+        /// <summary>
+        /// Persistent cached cascade shadowmap data, primarily for the temporal shadow.
+        /// </summary>
+        internal CachedCSMPersistentData cachedCSMPersistentData;
+        
         // TAA settings.
         internal TemporalAA.Settings taaSettings;
 
@@ -799,6 +804,21 @@ namespace UnityEngine.Rendering.Universal
         /// </summary>
         public float mainLightShadowCascadeBorder;
 
+        /// <summary>
+        /// True if main light shadow is cached.
+        /// </summary>
+        public bool cachedMainlightShadowEnabled;
+        
+        /// <summary>
+        /// the min level of the cascades to be cached statically.
+        /// </summary>
+        public int cachedMainLightShadowMinStaticLevel;
+        
+        /// <summary>
+        /// Determines the update frequency of the cached shadow map.
+        /// </summary>
+        public CachedCSMQuality cachedMainlightShadowQuality;
+        
         /// <summary>
         /// True if additional lights shadows are enabled.
         /// </summary>

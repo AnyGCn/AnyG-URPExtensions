@@ -214,6 +214,16 @@ namespace UnityEditor.Rendering.Universal
             disableGroup |= !serialized.mainLightShadowsSupportedProp.boolValue;
             EditorGUI.BeginDisabledGroup(disableGroup);
             EditorGUILayout.PropertyField(serialized.mainLightShadowmapResolutionProp, Styles.mainLightShadowmapResolutionText);
+            EditorGUILayout.PropertyField(serialized.cachedMainlightShadowEnabledProp, Styles.cachedMainLightText);
+            EditorGUI.EndDisabledGroup();
+
+            disableGroup |= !serialized.cachedMainlightShadowEnabledProp.boolValue;
+            EditorGUI.BeginDisabledGroup(disableGroup);
+            serialized.cachedMainLightShadowMinStaticLevelProp.intValue = EditorGUILayout.IntSlider(
+                Styles.cachedMainLightMinStaticLevelText, serialized.cachedMainLightShadowMinStaticLevelProp.intValue,
+                0,
+                UniversalRenderPipelineAsset.k_ShadowCascadeMaxCount);
+            EditorGUILayout.PropertyField(serialized.cachedMainlightShadowQualityProp, Styles.cachedMainLightQualityText);
             EditorGUI.EndDisabledGroup();
 
             EditorGUI.indentLevel--;

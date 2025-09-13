@@ -43,7 +43,8 @@ namespace UnityEngine.Rendering.Universal.Internal
         Vector4[] m_CascadeSplitDistances;
 
         bool m_CreateEmptyShadowmap;
-
+        bool m_CachedMode = false;
+        int m_CascadeUpdateMask = -1;
         int renderTargetWidth;
         int renderTargetHeight;
 
@@ -129,29 +130,53 @@ namespace UnityEngine.Rendering.Universal.Internal
                 return SetupForEmptyRendering(ref renderingData);
 
             m_ShadowCasterCascadesCount = renderingData.shadowData.mainLightShadowCascadesCount;
-
-            int shadowResolution = ShadowUtils.GetMaxTileResolutionInAtlas(renderingData.shadowData.mainLightShadowmapWidth,
-                renderingData.shadowData.mainLightShadowmapHeight, m_ShadowCasterCascadesCount);
-            renderTargetWidth = renderingData.shadowData.mainLightShadowmapWidth;
-            renderTargetHeight = (m_ShadowCasterCascadesCount == 2) ?
-                renderingData.shadowData.mainLightShadowmapHeight >> 1 :
-                renderingData.shadowData.mainLightShadowmapHeight;
-
-            for (int cascadeIndex = 0; cascadeIndex < m_ShadowCasterCascadesCount; ++cascadeIndex)
+            
+            CachedCSMPersistentData cachedCsmPersistentData = renderingData.cameraData.cachedCSMPersistentData;
+            if (cachedCsmPersistentData != null && cachedCsmPersistentData.Init(ref renderingData.shadowData))
             {
-                bool success = ShadowUtils.ExtractDirectionalLightMatrix(ref renderingData.cullResults, ref renderingData.shadowData,
-                    shadowLightIndex, cascadeIndex, renderTargetWidth, renderTargetHeight, shadowResolution, light.shadowNearPlane,
-                    out m_CascadeSplitDistances[cascadeIndex], out m_CascadeSlices[cascadeIndex]);
+                bool success = cachedCsmPersistentData.CalculateCascadeSlices(ref renderingData.cullResults,
+                    ref renderingData.shadowData,
+                    shadowLightIndex, light.shadowNearPlane,
+                    m_CascadeSplitDistances, m_CascadeSlices);
 
                 if (!success)
                     return SetupForEmptyRendering(ref renderingData);
+                
+                cachedCsmPersistentData.AllocateTargets();
+                renderTargetWidth = cachedCsmPersistentData.renderTargetWidth;
+                renderTargetHeight = cachedCsmPersistentData.renderTargetHeight;
+                m_MainLightShadowmapTexture = cachedCsmPersistentData.cachedCascadeShadowMap;
+                m_CachedMode = true;
+                m_CascadeUpdateMask = cachedCsmPersistentData.cascadeUpdateMask;
+            }
+            else
+            {
+                int shadowResolution = ShadowUtils.GetMaxTileResolutionInAtlas(renderingData.shadowData.mainLightShadowmapWidth,
+                    renderingData.shadowData.mainLightShadowmapHeight, m_ShadowCasterCascadesCount);
+                renderTargetWidth = renderingData.shadowData.mainLightShadowmapWidth;
+                renderTargetHeight = (m_ShadowCasterCascadesCount == 2) ?
+                    renderingData.shadowData.mainLightShadowmapHeight >> 1 :
+                    renderingData.shadowData.mainLightShadowmapHeight;
+                
+                for (int cascadeIndex = 0; cascadeIndex < m_ShadowCasterCascadesCount; ++cascadeIndex)
+                {
+                    bool success = ShadowUtils.ExtractDirectionalLightMatrix(ref renderingData.cullResults, ref renderingData.shadowData,
+                        shadowLightIndex, cascadeIndex, renderTargetWidth, renderTargetHeight, shadowResolution, light.shadowNearPlane,
+                        out m_CascadeSplitDistances[cascadeIndex], out m_CascadeSlices[cascadeIndex]);
+
+                    if (!success)
+                        return SetupForEmptyRendering(ref renderingData);
+                }
+                
+                m_CachedMode = false;
+                m_CascadeUpdateMask = -1;
+                ShadowUtils.ShadowRTReAllocateIfNeeded(ref m_MainLightShadowmapTexture, renderTargetWidth, renderTargetHeight, k_ShadowmapBufferBits, name: k_MainLightShadowMapTextureName);
             }
 
             m_MaxShadowDistanceSq = renderingData.cameraData.maxShadowDistance * renderingData.cameraData.maxShadowDistance;
             m_CascadeBorder = renderingData.shadowData.mainLightShadowCascadeBorder;
             m_CreateEmptyShadowmap = false;
-            useNativeRenderPass = true;
-            ShadowUtils.ShadowRTReAllocateIfNeeded(ref m_MainLightShadowmapTexture, renderTargetWidth, renderTargetHeight, k_ShadowmapBufferBits, name: k_MainLightShadowMapTextureName);
+            useNativeRenderPass = false;
 
             return true;
         }
@@ -178,8 +203,9 @@ namespace UnityEngine.Rendering.Universal.Internal
                 ResetTarget();
                 return;
             }
-                ConfigureTarget(m_MainLightShadowmapTexture);
-            ConfigureClear(ClearFlag.All, Color.black);
+            
+            ConfigureTarget(m_MainLightShadowmapTexture);
+            ConfigureClear(m_CachedMode ? ClearFlag.None : ClearFlag.All, Color.black);
         }
 
         /// <inheritdoc/>
@@ -251,13 +277,16 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                 for (int cascadeIndex = 0; cascadeIndex < m_ShadowCasterCascadesCount; ++cascadeIndex)
                 {
+                    if ((m_CascadeUpdateMask & (1 << cascadeIndex)) == 0)
+                        continue;
+                    
                     settings.splitData = m_CascadeSlices[cascadeIndex].splitData;
 
                     Vector4 shadowBias = ShadowUtils.GetShadowBias(ref shadowLight, shadowLightIndex, ref renderingData.shadowData, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].resolution);
                     ShadowUtils.SetupShadowCasterConstantBuffer(cmd, ref shadowLight, shadowBias);
                     CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.CastingPunctualLightShadow, false);
                     ShadowUtils.RenderShadowSlice(cmd, ref context, ref m_CascadeSlices[cascadeIndex],
-                        ref settings, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].viewMatrix);
+                        ref settings, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].viewMatrix, shadowData.cachedMainlightShadowEnabled);
                 }
 
                 renderingData.shadowData.isKeywordSoftShadowsEnabled = shadowLight.light.shadows == LightShadows.Soft && renderingData.shadowData.supportsSoftShadows;
@@ -355,8 +384,8 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                 if (!m_CreateEmptyShadowmap)
                 {
-                    passData.shadowmapTexture = UniversalRenderer.CreateRenderGraphTexture(graph, m_MainLightShadowmapTexture.rt.descriptor, "Main Shadowmap", true, ShadowUtils.m_ForceShadowPointSampling ? FilterMode.Point : FilterMode.Bilinear);
-                    builder.UseDepthBuffer(passData.shadowmapTexture, DepthAccess.Write);
+                    passData.shadowmapTexture = m_CachedMode ? graph.ImportTexture(m_MainLightShadowmapTexture) : UniversalRenderer.CreateRenderGraphTexture(graph, m_MainLightShadowmapTexture.rt.descriptor, "Main Shadowmap", true, ShadowUtils.m_ForceShadowPointSampling ? FilterMode.Point : FilterMode.Bilinear);
+                    builder.UseDepthBuffer(passData.shadowmapTexture, m_CachedMode ? DepthAccess.ReadWrite : DepthAccess.Write);
                 }
 
                 // Need this as shadowmap is only used as Global Texture and not a buffer, so would get culled by RG

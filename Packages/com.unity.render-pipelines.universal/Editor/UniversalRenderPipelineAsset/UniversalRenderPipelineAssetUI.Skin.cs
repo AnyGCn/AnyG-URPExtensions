@@ -50,6 +50,11 @@ namespace UnityEditor.Rendering.Universal
             public static GUIContent supportsMainLightShadowsText = EditorGUIUtility.TrTextContent("Cast Shadows", "If enabled, the main light can be a shadow casting light.");
             public static GUIContent mainLightShadowmapResolutionText = EditorGUIUtility.TrTextContent("Shadow Resolution", "Resolution of the main light shadowmap texture. If cascades are enabled, cascades will be packed into an atlas and this setting controls the maximum shadows atlas resolution.");
 
+            // Cached main light
+            public static GUIContent cachedMainLightText = EditorGUIUtility.TrTextContent("Cached Main Light", "If enabled, the main light would be cached if possible.");
+            public static GUIContent cachedMainLightMinStaticLevelText = EditorGUIUtility.TrTextContent("Min Static Cascade", "the static cascade shadow would not be updated if there are no changes on the view or the main light.");
+            public static GUIContent cachedMainLightQualityText = EditorGUIUtility.TrTextContent("Cached Quality", "Determines that how many cascade could be updated in a frame.");
+            
             // Additional lights
             public static GUIContent addditionalLightsRenderingModeText = EditorGUIUtility.TrTextContent("Additional Lights", "Additional lights support.");
             public static GUIContent perObjectLimit = EditorGUIUtility.TrTextContent("Per Object Limit", "Maximum amount of additional lights. These lights are sorted and culled per-object.");

@@ -280,6 +280,7 @@ namespace UnityEngine.Rendering.Universal
                 if (c.TryGetComponent<UniversalAdditionalCameraData>(out var acd))
                 {
                     acd.taaPersistentData?.DeallocateTargets();
+                    acd.cachedCSMPersistentData?.DeallocateTargets();
                 };
             }
         }
@@ -1259,6 +1260,7 @@ namespace UnityEngine.Rendering.Universal
                 cameraData.useScreenCoordOverride = additionalCameraData.useScreenCoordOverride;
                 cameraData.screenSizeOverride = additionalCameraData.screenSizeOverride;
                 cameraData.screenCoordScaleBias = additionalCameraData.screenCoordScaleBias;
+                cameraData.cachedCSMPersistentData = additionalCameraData.cachedCSMPersistentData;
             }
             else
             {
@@ -1440,6 +1442,9 @@ namespace UnityEngine.Rendering.Universal
             shadowData.mainLightShadowCascadesCount = SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2 ? 1 : settings.shadowCascadeCount;
             shadowData.mainLightShadowmapWidth = settings.mainLightShadowmapResolution;
             shadowData.mainLightShadowmapHeight = settings.mainLightShadowmapResolution;
+            shadowData.cachedMainlightShadowEnabled = settings.cachedMainlightShadowEnabled;
+            shadowData.cachedMainLightShadowMinStaticLevel = settings.cachedMainLightShadowMinStaticLevel;
+            shadowData.cachedMainlightShadowQuality = settings.cachedMainlightShadowQuality;
 
             switch (shadowData.mainLightShadowCascadesCount)
             {

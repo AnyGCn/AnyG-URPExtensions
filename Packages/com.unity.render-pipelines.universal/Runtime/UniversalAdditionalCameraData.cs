@@ -345,6 +345,7 @@ namespace UnityEngine.Rendering.Universal
         // These persist over multiple frames
         [NonSerialized] MotionVectorsPersistentData m_MotionVectorsPersistentData = new MotionVectorsPersistentData();
         [NonSerialized] TaaPersistentData m_TaaPersistentData = new TaaPersistentData();
+        [NonSerialized] CachedCSMPersistentData m_CachedCSMPersistentData = new CachedCSMPersistentData();
 
         [SerializeField] internal TemporalAA.Settings m_TaaSettings = TemporalAA.Settings.Create();
 
@@ -675,6 +676,11 @@ namespace UnityEngine.Rendering.Universal
         internal TaaPersistentData taaPersistentData => m_TaaPersistentData;
 
         /// <summary>
+        /// Temporal Anti-aliasing buffers and data that persists over a frame.
+        /// </summary>
+        internal CachedCSMPersistentData cachedCSMPersistentData => m_CachedCSMPersistentData;
+        
+        /// <summary>
         /// Motion data that persists over a frame.
         /// </summary>
         internal MotionVectorsPersistentData motionVectorsPersistentData => m_MotionVectorsPersistentData;
@@ -826,6 +832,7 @@ namespace UnityEngine.Rendering.Universal
             if (camera.cameraType != CameraType.SceneView)
                 GetRawRenderer()?.ReleaseRenderTargets();
             m_TaaPersistentData?.DeallocateTargets();
+            m_CachedCSMPersistentData?.DeallocateTargets();
         }
 
         ScriptableRenderer GetRawRenderer()
@@ -841,6 +848,11 @@ namespace UnityEngine.Rendering.Universal
                 return null;
 
             return renderers[m_RendererIndex];
+        }
+
+        public void SetCachedCSMDirty()
+        {
+            m_CachedCSMPersistentData.forceUpdate = true;
         }
     }
 }

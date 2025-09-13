@@ -466,6 +466,9 @@ namespace UnityEngine.Rendering.Universal
         [SerializeField] LightRenderingMode m_MainLightRenderingMode = LightRenderingMode.PerPixel;
         [SerializeField] bool m_MainLightShadowsSupported = true;
         [SerializeField] ShadowResolution m_MainLightShadowmapResolution = ShadowResolution._2048;
+        [SerializeField] bool m_CachedMainlightShadowEnabled = false;
+        [SerializeField] int m_CachedMainLightShadowMinStaticLevel = 1;
+        [SerializeField] CachedCSMQuality m_CachedMainlightShadowQuality = CachedCSMQuality.Balanced;
 
         // Additional lights settings
         [SerializeField] LightRenderingMode m_AdditionalLightsRenderingMode = LightRenderingMode.PerPixel;
@@ -1168,6 +1171,33 @@ namespace UnityEngine.Rendering.Universal
             internal set { m_MainLightShadowmapResolution = (ShadowResolution)value; }
         }
 
+        /// <summary>
+        /// True if main light shadow is cached.
+        /// </summary>
+        public bool cachedMainlightShadowEnabled
+        {
+            get { return m_CachedMainlightShadowEnabled; }
+            internal set { m_CachedMainlightShadowEnabled = value; }
+        }
+        
+        /// <summary>
+        /// the min level of the cascades to be cached statically.
+        /// </summary>
+        public int cachedMainLightShadowMinStaticLevel
+        {
+            get { return m_CachedMainLightShadowMinStaticLevel; }
+            internal set { m_CachedMainLightShadowMinStaticLevel = value; }
+        }
+        
+        /// <summary>
+        /// Determines the update frequency of the cached shadow map.
+        /// </summary>
+        public CachedCSMQuality cachedMainlightShadowQuality
+        {
+            get { return m_CachedMainlightShadowQuality; }
+            internal set { m_CachedMainlightShadowQuality = value; }
+        }
+        
         /// <summary>
         /// Specifies the <c>LightRenderingMode</c> for the additional lights used by this <c>UniversalRenderPipelineAsset</c>.
         /// </summary>
