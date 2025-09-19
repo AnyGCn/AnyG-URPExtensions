@@ -49,12 +49,10 @@ namespace ResidentDrawer
         public override int GetHashCode() { return index; }
     }
 
-    internal struct InstanceAllocator
+    internal struct InstanceAllocator : IDisposable
     {
         private NativeArray<int> m_StructData;
         private NativeList<int> m_FreeInstances;
-        private int m_BaseInstanceOffset;
-        private int m_InstanceStride;
 
         public int length { get => m_StructData[0]; set => m_StructData[0] = value; }
         public bool valid => m_StructData.IsCreated;
@@ -82,7 +80,7 @@ namespace ResidentDrawer
             }
             else
             {
-                instance = length * m_InstanceStride + m_BaseInstanceOffset;
+                instance = length;
                 length += 1;
             }
 
@@ -92,7 +90,7 @@ namespace ResidentDrawer
         public void FreeInstance(int instance)
         {
             //@ This is a bit weak validation. Need something better but fast.
-            Assert.IsTrue(instance >= 0 && instance < length * m_InstanceStride);
+            Assert.IsTrue(instance >= 0 && instance < length);
             m_FreeInstances.Add(instance);
         }
 
@@ -102,7 +100,7 @@ namespace ResidentDrawer
         }
     }
 
-    internal unsafe struct InstanceAllocators
+    internal unsafe struct InstanceAllocators : IDisposable
     {
         private InstanceAllocator m_InstanceAlloc;
         // private InstanceAllocator m_InstanceAlloc_SpeedTree;

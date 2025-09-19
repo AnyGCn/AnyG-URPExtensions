@@ -13,18 +13,103 @@ namespace ResidentDrawer
 {
     internal struct LODGroupInputData
     {
-        public NativeArray<int> lodGroupID;
-        public NativeArray<int> lodOffset;
-        public NativeArray<int> lodCount;
-        public NativeArray<LODFadeMode> fadeMode;
-        public NativeArray<Vector3> worldSpaceReferencePoint;
-        public NativeArray<float> worldSpaceSize;
-        public NativeArray<short> renderersCount;
-        public NativeArray<bool> lastLODIsBillboard;
-        public NativeArray<int> invalidLODGroupID;
-        public NativeArray<short> lodRenderersCount;
-        public NativeArray<float> lodScreenRelativeTransitionHeight;
-        public NativeArray<float> lodFadeTransitionWidth;
+        public NativeList<int> lodGroupID;
+        public NativeList<int> lodOffset;
+        public NativeList<int> lodCount;
+        public NativeList<LODFadeMode> fadeMode;
+        public NativeList<Vector3> worldSpaceReferencePoint;
+        public NativeList<float> worldSpaceSize;
+        public NativeList<short> renderersCount;
+        public NativeList<bool> lastLODIsBillboard;
+        public NativeList<int> invalidLODGroupID;
+        public NativeList<short> lodRenderersCount;
+        public NativeList<float> lodScreenRelativeTransitionHeight;
+        public NativeList<float> lodFadeTransitionWidth;
+
+        public void Initialize(int initCapacity)
+        {
+            lodGroupID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            lodOffset = new NativeList<int>(initCapacity, Allocator.Persistent);
+            lodCount = new NativeList<int>(initCapacity, Allocator.Persistent);
+            fadeMode = new NativeList<LODFadeMode>(initCapacity, Allocator.Persistent);
+            worldSpaceReferencePoint = new NativeList<Vector3>(initCapacity, Allocator.Persistent);
+            worldSpaceSize = new NativeList<float>(initCapacity, Allocator.Persistent);
+            renderersCount = new NativeList<short>(initCapacity, Allocator.Persistent);
+            lastLODIsBillboard = new NativeList<bool>(initCapacity, Allocator.Persistent);
+            invalidLODGroupID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            lodRenderersCount = new NativeList<short>(initCapacity, Allocator.Persistent);
+            lodScreenRelativeTransitionHeight = new NativeList<float>(initCapacity, Allocator.Persistent);
+            lodFadeTransitionWidth = new NativeList<float>(initCapacity, Allocator.Persistent);
+        }
+
+        public void Clear()
+        {
+            lodGroupID.Clear();
+            lodOffset.Clear();
+            lodCount.Clear();
+            fadeMode.Clear();
+            worldSpaceReferencePoint.Clear();
+            worldSpaceSize.Clear();
+            renderersCount.Clear();
+            lastLODIsBillboard.Clear();
+            invalidLODGroupID.Clear();
+            lodRenderersCount.Clear();
+            lodScreenRelativeTransitionHeight.Clear();
+            lodFadeTransitionWidth.Clear();
+        }
+        
+        public void Dispose()
+        {
+            lodGroupID.Dispose();
+            lodOffset.Dispose();
+            lodCount.Dispose();
+            fadeMode.Dispose();
+            worldSpaceReferencePoint.Dispose();
+            worldSpaceSize.Dispose();
+            renderersCount.Dispose();
+            lastLODIsBillboard.Dispose();
+            invalidLODGroupID.Dispose();
+            lodRenderersCount.Dispose();
+            lodScreenRelativeTransitionHeight.Dispose();
+            lodFadeTransitionWidth.Dispose();
+        }
+
+        public ReadOnly AsReadOnly()
+        {
+            return new ReadOnly(this);
+        }
+        
+        public struct ReadOnly
+        {
+            public NativeArray<int>.ReadOnly lodGroupID;
+            public NativeArray<int>.ReadOnly lodOffset;
+            public NativeArray<int>.ReadOnly lodCount;
+            public NativeArray<LODFadeMode>.ReadOnly fadeMode;
+            public NativeArray<Vector3>.ReadOnly worldSpaceReferencePoint;
+            public NativeArray<float>.ReadOnly worldSpaceSize;
+            public NativeArray<short>.ReadOnly renderersCount;
+            public NativeArray<bool>.ReadOnly lastLODIsBillboard;
+            public NativeArray<int>.ReadOnly invalidLODGroupID;
+            public NativeArray<short>.ReadOnly lodRenderersCount;
+            public NativeArray<float>.ReadOnly lodScreenRelativeTransitionHeight;
+            public NativeArray<float>.ReadOnly lodFadeTransitionWidth;
+
+            public ReadOnly(LODGroupInputData inputData)
+            {
+                lodGroupID = inputData.lodGroupID.AsArray().AsReadOnly();
+                lodOffset = inputData.lodOffset.AsArray().AsReadOnly();
+                lodCount = inputData.lodCount.AsArray().AsReadOnly();
+                fadeMode = inputData.fadeMode.AsArray().AsReadOnly();
+                worldSpaceReferencePoint = inputData.worldSpaceReferencePoint.AsArray().AsReadOnly();
+                worldSpaceSize = inputData.worldSpaceSize.AsArray().AsReadOnly();
+                renderersCount = inputData.renderersCount.AsArray().AsReadOnly();
+                lastLODIsBillboard = inputData.lastLODIsBillboard.AsArray().AsReadOnly();
+                invalidLODGroupID = inputData.invalidLODGroupID.AsArray().AsReadOnly();
+                lodRenderersCount = inputData.lodRenderersCount.AsArray().AsReadOnly();
+                lodScreenRelativeTransitionHeight = inputData.lodScreenRelativeTransitionHeight.AsArray().AsReadOnly();
+                lodFadeTransitionWidth = inputData.lodFadeTransitionWidth.AsArray().AsReadOnly();
+            }
+        }
     }
     
     internal unsafe struct LODGroupData
@@ -107,7 +192,7 @@ namespace ResidentDrawer
     [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     internal unsafe struct AllocateOrGetLODGroupDataInstancesJob : IJob
     {
-        [ReadOnly] public NativeArray<int> lodGroupsID;
+        [ReadOnly] public NativeArray<int>.ReadOnly lodGroupsID;
 
         public NativeList<LODGroupData> lodGroupsData;
         public NativeList<LODGroupCullingData> lodGroupCullingData;
@@ -156,7 +241,7 @@ namespace ResidentDrawer
         public const int k_BatchSize = 256;
 
         [ReadOnly] public NativeArray<GPUInstanceIndex> lodGroupInstances;
-        [ReadOnly] public LODGroupInputData inputData;
+        [ReadOnly] public LODGroupInputData.ReadOnly inputData;
         [ReadOnly] public bool supportDitheringCrossFade;
 
         public NativeArray<LODGroupData> lodGroupsData;
@@ -238,7 +323,7 @@ namespace ResidentDrawer
     [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
     internal unsafe struct FreeLODGroupDataJob : IJob
     {
-        [ReadOnly] public NativeArray<int> destroyedLODGroupsID;
+        [ReadOnly] public NativeArray<int>.ReadOnly destroyedLODGroupsID;
 
         public NativeList<LODGroupData> lodGroupsData;
         public NativeParallelHashMap<int, GPUInstanceIndex> lodGroupDataHash;
@@ -339,7 +424,7 @@ namespace ResidentDrawer
                 jobData.Run(lodGroupCount);
         }
 
-        public unsafe void UpdateLODGroupData(in LODGroupInputData inputData)
+        public unsafe void UpdateLODGroupData(in LODGroupInputData.ReadOnly inputData)
         {
             FreeLODGroupData(inputData.invalidLODGroupID);
 
@@ -383,7 +468,7 @@ namespace ResidentDrawer
             lodGroupInstances.Dispose();
         }
 
-        public unsafe void FreeLODGroupData(NativeArray<int> destroyedLODGroupsID)
+        public unsafe void FreeLODGroupData(NativeArray<int>.ReadOnly destroyedLODGroupsID)
         {
             if (destroyedLODGroupsID.Length == 0)
                 return;

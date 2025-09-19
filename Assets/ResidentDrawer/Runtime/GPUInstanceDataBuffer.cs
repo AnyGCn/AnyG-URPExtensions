@@ -1,10 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 namespace ResidentDrawer
@@ -160,6 +163,20 @@ namespace ResidentDrawer
         
         public bool valid => descriptions.IsCreated;
 
+        private static GPUInstanceIndex CPUInstanceToGPUInstance(InstanceHandle instance)
+        {
+#if DEBUG
+            Assert.IsTrue(instance.valid);
+#endif
+
+            if (!instance.valid)
+                return GPUInstanceIndex.Invalid;
+
+            int gpuInstanceIndex = instance.instanceIndex;
+
+            return new GPUInstanceIndex { index = gpuInstanceIndex };
+        }
+        
         public int GetPropertyIndex(int propertyID, bool assertOnFail = true)
         {
             if (nameToMetadataMap.TryGetValue(propertyID, out int componentIndex))
@@ -185,6 +202,24 @@ namespace ResidentDrawer
         {
             int componentIndex = GetPropertyIndex(propertyID, assertOnFail);
             return componentIndex != -1 ? gpuBufferComponentAddress[componentIndex] : -1;
+        }
+        
+        public unsafe InstanceHandle GPUInstanceToCPUInstance(GPUInstanceIndex gpuInstanceIndex)
+        {
+            Assert.IsTrue(gpuInstanceIndex.index < instanceCount);
+            return InstanceHandle.Create(gpuInstanceIndex.index);
+        }
+
+        public void CPUInstanceArrayToGPUInstanceArray(NativeArray<InstanceHandle> instances, NativeArray<GPUInstanceIndex> gpuInstanceIndices)
+        {
+            Assert.AreEqual(instances.Length, gpuInstanceIndices.Length);
+
+            Profiler.BeginSample("CPUInstanceArrayToGPUInstanceArray");
+
+            new ConvertCPUInstancesToGPUInstancesJob { instances = instances, gpuInstanceIndices = gpuInstanceIndices }
+                .Schedule(instances.Length, ConvertCPUInstancesToGPUInstancesJob.k_BatchSize).Complete();
+
+            Profiler.EndSample();
         }
         
         public void Dispose()
@@ -216,6 +251,51 @@ namespace ResidentDrawer
             if (componentByteCountsGpuBuffer != null)
                 componentByteCountsGpuBuffer.Release();
         }
+        
+        public ReadOnly AsReadOnly()
+        {
+            return new ReadOnly(this);
+        }
+        
+        internal readonly struct ReadOnly
+        {
+
+            public ReadOnly(GPUInstanceDataBuffer buffer)
+            {
+                
+            }
+
+            public GPUInstanceIndex CPUInstanceToGPUInstance(InstanceHandle instance)
+            {
+                return GPUInstanceDataBuffer.CPUInstanceToGPUInstance(instance);
+            }
+
+            public void CPUInstanceArrayToGPUInstanceArray(NativeArray<InstanceHandle> instances, NativeArray<GPUInstanceIndex> gpuInstanceIndices)
+            {
+                Assert.AreEqual(instances.Length, gpuInstanceIndices.Length);
+
+                Profiler.BeginSample("CPUInstanceArrayToGPUInstanceArray");
+
+                new ConvertCPUInstancesToGPUInstancesJob { instances = instances, gpuInstanceIndices = gpuInstanceIndices }
+                    .Schedule(instances.Length, ConvertCPUInstancesToGPUInstancesJob.k_BatchSize).Complete();
+
+                Profiler.EndSample();
+            }
+        }
+        
+        [BurstCompile(DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+        struct ConvertCPUInstancesToGPUInstancesJob : IJobParallelFor
+        {
+            public const int k_BatchSize = 512;
+
+            [ReadOnly] public NativeArray<InstanceHandle> instances;
+
+            [WriteOnly] public NativeArray<GPUInstanceIndex> gpuInstanceIndices;
+
+            public void Execute(int index)
+            {
+                gpuInstanceIndices[index] = CPUInstanceToGPUInstance(instances[index]);
+            }
+        }
     }
-    
 }

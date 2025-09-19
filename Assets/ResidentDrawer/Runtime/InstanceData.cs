@@ -64,7 +64,7 @@ namespace ResidentDrawer
         }
     }
 
-    internal struct GPUDrivenPackedMaterialData
+    public struct GPUDrivenPackedMaterialData
     {
         private uint data;
 
@@ -88,9 +88,19 @@ namespace ResidentDrawer
         {
             return ((int) other.data & 7) == ((int) this.data & 7);
         }
+
+        public static implicit operator uint(GPUDrivenPackedMaterialData other)
+        {
+            return other.data;
+        }
+        
+        public static implicit operator GPUDrivenPackedMaterialData(uint other)
+        {
+            return new GPUDrivenPackedMaterialData() { data = other };
+        }
     }
     
-    internal struct GPUDrivenPackedRendererData
+    public struct GPUDrivenPackedRendererData
     {
         private uint data;
 
@@ -146,36 +156,201 @@ namespace ResidentDrawer
         }
     }
     
-    internal struct GPUDrivenRendererGroupData
+    internal struct RendererGroupInputData
     {
-        public NativeArray<int> rendererGroupID;
-        public NativeArray<Bounds> localBounds;
-        public NativeArray<Vector4> lightmapScaleOffset;
-        public NativeArray<int> gameObjectLayer;
-        public NativeArray<uint> renderingLayerMask;
-        public NativeArray<int> lodGroupID;
-        public NativeArray<int> lightmapIndex;
-        public NativeArray<GPUDrivenPackedRendererData> packedRendererData;
-        public NativeArray<int> rendererPriority;
-        public NativeArray<int> meshIndex;
-        public NativeArray<short> subMeshStartIndex;
-        public NativeArray<int> materialsOffset;
-        public NativeArray<short> materialsCount;
-        public NativeArray<int> instancesOffset;
-        public NativeArray<int> instancesCount;
-        // public NativeArray<GPUDrivenRendererEditorData> editorData;
-        public NativeArray<int> invalidRendererGroupID;
-        public NativeArray<Matrix4x4> localToWorldMatrix;
-        public NativeArray<Matrix4x4> prevLocalToWorldMatrix;
-        public NativeArray<int> rendererGroupIndex;
-        public NativeArray<int> meshID;
-        public NativeArray<short> subMeshCount;
-        public NativeArray<int> subMeshDescOffset;
-        public NativeArray<SubMeshDescriptor> subMeshDesc;
-        public NativeArray<int> materialIndex;
-        public NativeArray<int> materialID;
-        public NativeArray<GPUDrivenPackedMaterialData> packedMaterialData;
-        public NativeArray<int> materialFilterFlags;
+        public NativeList<int> rendererGroupID;
+        public NativeList<Bounds> localBounds;
+        public NativeList<Vector4> lightmapScaleOffset;
+        public NativeList<int> gameObjectLayer;
+        public NativeList<uint> renderingLayerMask;
+        public NativeList<int> lodGroupID;
+        public NativeList<int> lightmapIndex;
+        public NativeList<GPUDrivenPackedRendererData> packedRendererData;
+        public NativeList<int> rendererPriority;
+        public NativeList<int> meshIndex;
+        public NativeList<short> subMeshStartIndex;
+        public NativeList<int> materialsOffset;
+        public NativeList<short> materialsCount;
+        public NativeList<int> instancesOffset;
+        public NativeList<int> instancesCount;
+        // public NativeList<GPUDrivenRendererEditorData> editorData;
+        public NativeList<int> invalidRendererGroupID;
+        public NativeList<Matrix4x4> localToWorldMatrix;
+        public NativeList<Matrix4x4> prevLocalToWorldMatrix;
+        public NativeList<int> rendererGroupIndex;
+        public NativeList<int> meshID;
+        public NativeList<short> subMeshCount;
+        public NativeList<int> subMeshDescOffset;
+        public NativeList<SubMeshDescriptor> subMeshDesc;
+        public NativeList<int> materialIndex;
+        public NativeList<int> materialID;
+        public NativeList<GPUDrivenPackedMaterialData> packedMaterialData;
+        public NativeList<int> materialFilterFlags;
+        
+        public void Initialize(int initCapacity)
+        {
+            this.rendererGroupID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.localBounds = new NativeList<Bounds>(initCapacity, Allocator.Persistent);
+            this.lightmapScaleOffset = new NativeList<Vector4>(initCapacity, Allocator.Persistent);
+            this.gameObjectLayer = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.renderingLayerMask = new NativeList<uint>(initCapacity, Allocator.Persistent);
+            this.lodGroupID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.lightmapIndex = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.packedRendererData = new NativeList<GPUDrivenPackedRendererData>(initCapacity, Allocator.Persistent);
+            this.rendererPriority = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.meshIndex = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.subMeshStartIndex = new NativeList<short>(initCapacity, Allocator.Persistent);
+            this.materialsOffset = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.materialsCount = new NativeList<short>(initCapacity, Allocator.Persistent);
+            this.instancesOffset = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.instancesCount = new NativeList<int>(initCapacity, Allocator.Persistent);
+            // this.editorData = new NativeList<GPUDrivenRendererEditorData>(initCapacity, Allocator.Persistent);
+            this.invalidRendererGroupID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.localToWorldMatrix = new NativeList<Matrix4x4>(initCapacity, Allocator.Persistent);
+            this.prevLocalToWorldMatrix = new NativeList<Matrix4x4>(initCapacity, Allocator.Persistent);
+            this.rendererGroupIndex = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.meshID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.subMeshCount = new NativeList<short>(initCapacity, Allocator.Persistent);
+            this.subMeshDescOffset = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.subMeshDesc = new NativeList<SubMeshDescriptor>(initCapacity, Allocator.Persistent);
+            this.materialIndex = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.materialID = new NativeList<int>(initCapacity, Allocator.Persistent);
+            this.packedMaterialData = new NativeList<GPUDrivenPackedMaterialData>(initCapacity, Allocator.Persistent);
+            this.materialFilterFlags = new NativeList<int>(initCapacity, Allocator.Persistent);
+        }
+
+        public void Dispose()
+        {
+            this.rendererGroupID.Dispose();
+            this.localBounds.Dispose();
+            this.lightmapScaleOffset.Dispose();
+            this.gameObjectLayer.Dispose();
+            this.renderingLayerMask.Dispose();
+            this.lodGroupID.Dispose();
+            this.lightmapIndex.Dispose();
+            this.packedRendererData.Dispose();
+            this.rendererPriority.Dispose();
+            this.meshIndex.Dispose();
+            this.subMeshStartIndex.Dispose();
+            this.materialsOffset.Dispose();
+            this.materialsCount.Dispose();
+            this.instancesOffset.Dispose();
+            this.instancesCount.Dispose();
+            // this.editorData.Dispose();
+            this.invalidRendererGroupID.Dispose();
+            this.localToWorldMatrix.Dispose();
+            this.prevLocalToWorldMatrix.Dispose();
+            this.rendererGroupIndex.Dispose();
+            this.meshID.Dispose();
+            this.subMeshCount.Dispose();
+            this.subMeshDescOffset.Dispose();
+            this.subMeshDesc.Dispose();
+            this.materialIndex.Dispose();
+            this.materialID.Dispose();
+            this.packedMaterialData.Dispose();
+            this.materialFilterFlags.Dispose();
+        }
+        
+        public void Clear()
+        {
+            this.rendererGroupID.Clear();
+            this.localBounds.Clear();
+            this.lightmapScaleOffset.Clear();
+            this.gameObjectLayer.Clear();
+            this.renderingLayerMask.Clear();
+            this.lodGroupID.Clear();
+            this.lightmapIndex.Clear();
+            this.packedRendererData.Clear();
+            this.rendererPriority.Clear();
+            this.meshIndex.Clear();
+            this.subMeshStartIndex.Clear();
+            this.materialsOffset.Clear();
+            this.materialsCount.Clear();
+            this.instancesOffset.Clear();
+            this.instancesCount.Clear();
+            // this.editorData.Clear();
+            this.invalidRendererGroupID.Clear();
+            this.localToWorldMatrix.Clear();
+            this.prevLocalToWorldMatrix.Clear();
+            this.rendererGroupIndex.Clear();
+            this.meshID.Clear();
+            this.subMeshCount.Clear();
+            this.subMeshDescOffset.Clear();
+            this.subMeshDesc.Clear();
+            this.materialIndex.Clear();
+            this.materialID.Clear();
+            this.packedMaterialData.Clear();
+            this.materialFilterFlags.Clear();
+        }
+        
+        public ReadOnly AsReadOnly()
+        {
+            return new ReadOnly(this);
+        }
+
+        public struct ReadOnly 
+        {
+            public NativeArray<int>.ReadOnly rendererGroupID;
+            public NativeArray<Bounds>.ReadOnly localBounds;
+            public NativeArray<Vector4>.ReadOnly lightmapScaleOffset;
+            public NativeArray<int>.ReadOnly gameObjectLayer;
+            public NativeArray<uint>.ReadOnly renderingLayerMask;
+            public NativeArray<int>.ReadOnly lodGroupID;
+            public NativeArray<int>.ReadOnly lightmapIndex;
+            public NativeArray<GPUDrivenPackedRendererData>.ReadOnly packedRendererData;
+            public NativeArray<int>.ReadOnly rendererPriority;
+            public NativeArray<int>.ReadOnly meshIndex;
+            public NativeArray<short>.ReadOnly subMeshStartIndex;
+            public NativeArray<int>.ReadOnly materialsOffset;
+            public NativeArray<short>.ReadOnly materialsCount;
+            public NativeArray<int>.ReadOnly instancesOffset;
+            public NativeArray<int>.ReadOnly instancesCount;
+            // public NativeArray<GPUDrivenRendererEditorData>.ReadOnly editorData;
+            public NativeArray<int>.ReadOnly invalidRendererGroupID;
+            public NativeArray<Matrix4x4>.ReadOnly localToWorldMatrix;
+            public NativeArray<Matrix4x4>.ReadOnly prevLocalToWorldMatrix;
+            public NativeArray<int>.ReadOnly rendererGroupIndex;
+            public NativeArray<int>.ReadOnly meshID;
+            public NativeArray<short>.ReadOnly subMeshCount;
+            public NativeArray<int>.ReadOnly subMeshDescOffset;
+            public NativeArray<SubMeshDescriptor>.ReadOnly subMeshDesc;
+            public NativeArray<int>.ReadOnly materialIndex;
+            public NativeArray<int>.ReadOnly materialID;
+            public NativeArray<GPUDrivenPackedMaterialData>.ReadOnly packedMaterialData;
+            public NativeArray<int>.ReadOnly materialFilterFlags;
+
+            public ReadOnly(RendererGroupInputData inputData)
+            {
+                rendererGroupID = inputData.rendererGroupID.AsArray().AsReadOnly();
+                localBounds = inputData.localBounds.AsArray().AsReadOnly();
+                lightmapScaleOffset = inputData.lightmapScaleOffset.AsArray().AsReadOnly();
+                gameObjectLayer = inputData.gameObjectLayer.AsArray().AsReadOnly();
+                renderingLayerMask = inputData.renderingLayerMask.AsArray().AsReadOnly();
+                lodGroupID = inputData.lodGroupID.AsArray().AsReadOnly();
+                lightmapIndex = inputData.lightmapIndex.AsArray().AsReadOnly();
+                packedRendererData = inputData.packedRendererData.AsArray().AsReadOnly();
+                rendererPriority = inputData.rendererPriority.AsArray().AsReadOnly();
+                meshIndex = inputData.meshIndex.AsArray().AsReadOnly();
+                subMeshStartIndex = inputData.subMeshStartIndex.AsArray().AsReadOnly();
+                materialsOffset = inputData.materialsOffset.AsArray().AsReadOnly();
+                materialsCount = inputData.materialsCount.AsArray().AsReadOnly();
+                instancesOffset = inputData.instancesOffset.AsArray().AsReadOnly();
+                instancesCount = inputData.instancesCount.AsArray().AsReadOnly();
+                // editorData = inputData.editorData.AsArray().AsReadOnly();
+                invalidRendererGroupID = inputData.invalidRendererGroupID.AsArray().AsReadOnly();
+                localToWorldMatrix = inputData.localToWorldMatrix.AsArray().AsReadOnly();
+                prevLocalToWorldMatrix = inputData.prevLocalToWorldMatrix.AsArray().AsReadOnly();
+                rendererGroupIndex = inputData.rendererGroupIndex.AsArray().AsReadOnly();
+                meshID = inputData.meshID.AsArray().AsReadOnly();
+                subMeshCount = inputData.subMeshCount.AsArray().AsReadOnly();
+                subMeshDescOffset = inputData.subMeshDescOffset.AsArray().AsReadOnly();
+                subMeshDesc = inputData.subMeshDesc.AsArray().AsReadOnly();
+                materialIndex = inputData.materialIndex.AsArray().AsReadOnly();
+                materialID = inputData.materialID.AsArray().AsReadOnly();
+                packedMaterialData = inputData.packedMaterialData.AsArray().AsReadOnly();
+                materialFilterFlags = inputData.materialFilterFlags.AsArray().AsReadOnly();
+            }
+        }
     }
     
     internal struct CPUInstanceData : IDisposable
@@ -408,7 +583,7 @@ namespace ResidentDrawer
             public readonly NativeArray<InstanceHandle>.ReadOnly instances;
             public readonly NativeArray<SharedInstanceHandle>.ReadOnly sharedInstances;
             public readonly ParallelBitArray localToWorldIsFlippedBits;
-            public readonly NativeArray<AABB>.ReadOnly worldAABBs;
+            public readonly NativeArray<AABB> worldAABBs;
             public readonly NativeArray<int>.ReadOnly tetrahedronCacheIndices;
             public readonly ParallelBitArray movedInCurrentFrameBits;
             public readonly ParallelBitArray movedInPreviousFrameBits;
@@ -423,7 +598,7 @@ namespace ResidentDrawer
                 instances = instanceData.instances.GetSubArray(0, instanceData.instancesLength).AsReadOnly();
                 sharedInstances = instanceData.sharedInstances.GetSubArray(0, instanceData.instancesLength).AsReadOnly();
                 localToWorldIsFlippedBits = instanceData.localToWorldIsFlippedBits.GetSubArray(instanceData.instancesLength);
-                worldAABBs = instanceData.worldAABBs.GetSubArray(0, instanceData.instancesLength).AsReadOnly();
+                worldAABBs = instanceData.worldAABBs.GetSubArray(0, instanceData.instancesLength);
                 tetrahedronCacheIndices = instanceData.tetrahedronCacheIndices.GetSubArray(0, instanceData.instancesLength).AsReadOnly();
                 movedInCurrentFrameBits = instanceData.movedInCurrentFrameBits.GetSubArray(instanceData.instancesLength);//.AsReadOnly(); // Implement later.
                 movedInPreviousFrameBits = instanceData.movedInPreviousFrameBits.GetSubArray(instanceData.instancesLength);//.AsReadOnly(); // Implement later.
