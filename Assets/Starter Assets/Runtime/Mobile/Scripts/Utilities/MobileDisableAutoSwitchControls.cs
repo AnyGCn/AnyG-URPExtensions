@@ -33,7 +33,7 @@ public class MobileDisableAutoSwitchControls : MonoBehaviour
 
     private void Update()
     {
-        Debug.Log(playerInput.currentControlScheme);
+        // Debug.Log(playerInput.currentControlScheme);
     }
 
 #endif
