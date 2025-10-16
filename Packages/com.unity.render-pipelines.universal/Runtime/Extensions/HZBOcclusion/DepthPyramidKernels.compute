@@ -1,0 +1,148 @@
+#pragma kernel OccluderDepthDownscale
+
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
+#pragma multi_compile _ USE_SRC
+#pragma multi_compile _ SRC_IS_ARRAY
+#pragma multi_compile _ SRC_IS_MSAA
+
+uint4 _MipOffsetAndSize0;
+uint4 _MipOffsetAndSize1;
+uint4 _MipOffsetAndSize2;
+uint4 _MipOffsetAndSize3;
+uint4 _MipOffsetAndSize4;
+uint _MipCount;
+RW_TEXTURE2D(float, _DstDepth);
+
+#ifdef USE_SRC
+    TEXTURE2D(_SrcDepth);
+#endif
+
+float FarthestDepth(float depthA, float depthB)
+{
+    #if UNITY_REVERSED_Z
+    return min(depthA, depthB);
+    #else
+    return max(depthA, depthB);
+    #endif
+}
+
+float FarthestDepth(float4 depths)
+{
+    #if UNITY_REVERSED_Z
+    return Min3(depths.x, depths.y, min(depths.z, depths.w));
+    #else
+    return Max3(depths.x, depths.y, max(depths.z, depths.w));
+    #endif
+}
+
+bool IsVisibleAfterOcclusion(float occluderDepth, float queryClosestDepth)
+{
+    #if UNITY_REVERSED_Z
+    return queryClosestDepth > occluderDepth;
+    #else
+    return queryClosestDepth < occluderDepth;
+    #endif
+}
+
+float LoadDepth(int2 coord)
+{
+#ifdef USE_SRC
+    return _SrcDepth[coord].x;
+#else
+    return _DstDepth[coord].x;
+#endif
+}
+
+uint2 CoordInTileByIndex(uint i)
+{
+    // decode i = [yxxyyx] (we want each pair of bits to have an x and a y)
+    return uint2(
+        (i & 1) | ((i >> 2) & 6),
+        ((i >> 1) & 3) | ((i >> 3) & 4));
+}
+
+groupshared float s_farDepth[32];
+
+void SubgroupMergeDepths(uint threadID : SV_GroupThreadID, uint bitIndex, inout float farDepth)
+{
+    uint highIndex = threadID >> (bitIndex + 1);
+    uint lowIndex = threadID & ((1 << (bitIndex + 1)) - 1);
+
+    if (lowIndex == (1 << bitIndex))
+        s_farDepth[highIndex] = farDepth;
+#if !defined(SHADER_API_WEBGPU)
+    GroupMemoryBarrierWithGroupSync();
+#endif
+
+    if (lowIndex == 0)
+        farDepth = FarthestDepth(farDepth, s_farDepth[highIndex]);
+#if !defined(SHADER_API_WEBGPU)
+    GroupMemoryBarrierWithGroupSync();
+#endif
+}
+
+// Downsample a depth texture by taking the min value of sampled pixels
+[numthreads(64, 1, 1)]
+void OccluderDepthDownscale(uint threadID : SV_GroupThreadID, uint3 groupID : SV_GroupID)
+{
+    // assign threads to pixels in a swizzle-like pattern
+    uint2 dstCoord1 = (groupID.xy << 3) | CoordInTileByIndex(threadID);
+    int updateIndex = groupID.z;
+
+    uint2 loadOffset = _MipOffsetAndSize0.xy;
+    uint2 srcCoord = dstCoord1 << 1;
+    uint2 srcLimit = _MipOffsetAndSize0.zw - 1;
+
+    float p00 = LoadDepth(loadOffset + min(srcCoord + int2(0, 0), srcLimit));
+    float p10 = LoadDepth(loadOffset + min(srcCoord + int2(1, 0), srcLimit));
+    float p01 = LoadDepth(loadOffset + min(srcCoord + int2(0, 1), srcLimit));
+    float p11 = LoadDepth(loadOffset + min(srcCoord + int2(1, 1), srcLimit));
+
+    float farDepth = FarthestDepth(float4(p00, p10, p01, p11));
+
+    // write dst0
+    if (all(dstCoord1 < _MipOffsetAndSize1.zw))
+        _DstDepth[_MipOffsetAndSize1.xy + dstCoord1] = farDepth;
+
+    // merge towards thread 0 in subgroup size 4
+    if (2 <= _MipCount)
+    {
+        SubgroupMergeDepths(threadID, 0, farDepth);
+        SubgroupMergeDepths(threadID, 1, farDepth);
+        if ((threadID & 0x3) == 0)
+        {
+            uint2 dstCoord2 = dstCoord1 >> 1;
+            if (all(dstCoord2 < _MipOffsetAndSize2.zw))
+                _DstDepth[_MipOffsetAndSize2.xy + dstCoord2] = farDepth;
+        }
+    }
+
+    // merge towards thread 0 in subgroup size 16
+    if (3 <= _MipCount)
+    {
+        SubgroupMergeDepths(threadID, 2, farDepth);
+        SubgroupMergeDepths(threadID, 3, farDepth);
+        if ((threadID & 0xf) == 0)
+        {
+            uint2 dstCoord3 = dstCoord1 >> 2;
+            if (all(dstCoord3 < _MipOffsetAndSize3.zw))
+                _DstDepth[_MipOffsetAndSize3.xy + dstCoord3] = farDepth;
+        }
+    }
+
+    // merge to thread 0
+    if (4 <= _MipCount)
+    {
+        SubgroupMergeDepths(threadID, 4, farDepth);
+        SubgroupMergeDepths(threadID, 5, farDepth);
+        if ((threadID & 0x3f) == 0)
+        {
+            uint2 dstCoord4 = dstCoord1 >> 3;
+            if (all(dstCoord4 < _MipOffsetAndSize4.zw))
+                _DstDepth[_MipOffsetAndSize4.xy + dstCoord4] = farDepth;
+        }
+    }
+}
