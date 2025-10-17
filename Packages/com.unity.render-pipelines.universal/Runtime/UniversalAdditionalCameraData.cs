@@ -346,6 +346,7 @@ namespace UnityEngine.Rendering.Universal
         [NonSerialized] MotionVectorsPersistentData m_MotionVectorsPersistentData = new MotionVectorsPersistentData();
         [NonSerialized] TaaPersistentData m_TaaPersistentData = new TaaPersistentData();
         [NonSerialized] CachedCSMPersistentData m_CachedCSMPersistentData = new CachedCSMPersistentData();
+        [NonSerialized] HZBOcclusionData m_HZBOcclusionData = new HZBOcclusionData();
 
         [SerializeField] internal TemporalAA.Settings m_TaaSettings = TemporalAA.Settings.Create();
 
@@ -681,6 +682,11 @@ namespace UnityEngine.Rendering.Universal
         internal CachedCSMPersistentData cachedCSMPersistentData => m_CachedCSMPersistentData;
         
         /// <summary>
+        /// Temporal Anti-aliasing buffers and data that persists over a frame.
+        /// </summary>
+        internal HZBOcclusionData hzbOcclusionData => m_HZBOcclusionData;
+        
+        /// <summary>
         /// Motion data that persists over a frame.
         /// </summary>
         internal MotionVectorsPersistentData motionVectorsPersistentData => m_MotionVectorsPersistentData;
@@ -833,6 +839,7 @@ namespace UnityEngine.Rendering.Universal
                 GetRawRenderer()?.ReleaseRenderTargets();
             m_TaaPersistentData?.DeallocateTargets();
             m_CachedCSMPersistentData?.DeallocateTargets();
+            m_HZBOcclusionData?.Dispose();
         }
 
         ScriptableRenderer GetRawRenderer()

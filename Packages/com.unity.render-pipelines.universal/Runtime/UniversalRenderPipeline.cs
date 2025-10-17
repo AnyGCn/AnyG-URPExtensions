@@ -281,6 +281,7 @@ namespace UnityEngine.Rendering.Universal
                 {
                     acd.taaPersistentData?.DeallocateTargets();
                     acd.cachedCSMPersistentData?.DeallocateTargets();
+                    acd.hzbOcclusionData?.ClearData();
                 };
             }
         }
