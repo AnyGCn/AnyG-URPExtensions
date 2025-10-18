@@ -200,7 +200,9 @@ namespace UnityEngine.Rendering.Universal
 
             m_RingBuffer.Dequeue();
             var srcKeyword = new LocalKeyword(shader, "USE_SRC");
+            var srcIsMsaaKeyword = new LocalKeyword(shader, "SRC_IS_MSAA");
 
+            bool srcIsMsaa = cameraDepthTargetHandle?.isMSAAEnabled ?? false;
             int mipCount = firstDepthMipIndex + depthMips;
             for (int mipIndexBase = 0; mipIndexBase < mipCount - 1; mipIndexBase += 4)
             {
@@ -208,6 +210,7 @@ namespace UnityEngine.Rendering.Universal
 
                 bool useSrc = (mipIndexBase == 0);
                 cmd.SetKeyword(shader, srcKeyword, useSrc);
+                cmd.SetKeyword(shader, srcIsMsaaKeyword, useSrc && srcIsMsaa);
                 if (useSrc)
                     cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._SrcDepth, cameraDepthTargetHandle);
 
