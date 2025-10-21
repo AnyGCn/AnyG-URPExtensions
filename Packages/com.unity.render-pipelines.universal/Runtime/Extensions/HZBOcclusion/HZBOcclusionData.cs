@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 using Unity.Collections;
 using Unity.Mathematics;
+using UnityEngine.Assertions;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
