@@ -28,14 +28,14 @@ namespace UnityEngine.Rendering.Universal
             m_HZBuffer = new NativeArray<float>(textureSize.x * textureSize.y, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
         }
 
-        public void RequestAsyncReadback(CommandBuffer cmd, RenderTexture renderTexture, ref CameraData cameraData)
+        bool UpdateFrameInfo(ref CameraData cameraData)
         {
 #if UNITY_EDITOR
             // pause would lead to readback stuck.
             if (EditorApplication.isPaused)
-                return;
+                return false;
 #endif
-            cmd.RequestAsyncReadbackIntoNativeArray(ref m_HZBuffer, renderTexture, OnRequestCallback);
+            
             lastRenderFrameCount = Time.frameCount;
             var viewMatrix = cameraData.GetViewMatrix();
             var viewMatrixInverse = viewMatrix.inverse;
@@ -46,6 +46,19 @@ namespace UnityEngine.Rendering.Universal
             facingDirWorldSpace = ((Vector3)viewMatrixInverse.GetColumn(2)).normalized;
             radialDirWorldSpace = ((Vector3)(viewMatrixInverse.GetColumn(0) + viewMatrixInverse.GetColumn(1))).normalized;
             onFlight = true;
+            return true;
+        }
+        
+        public void RequestAsyncReadback(CommandBuffer cmd, ComputeBuffer computeBuffer, ref CameraData cameraData)
+        {
+            if (!UpdateFrameInfo(ref cameraData)) return;
+            cmd.RequestAsyncReadbackIntoNativeArray(ref m_HZBuffer, computeBuffer, OnRequestCallback);
+        }
+        
+        public void RequestAsyncReadback(CommandBuffer cmd, RenderTexture renderTexture, ref CameraData cameraData)
+        {
+            if (!UpdateFrameInfo(ref cameraData)) return;
+            cmd.RequestAsyncReadbackIntoNativeArray(ref m_HZBuffer, renderTexture, OnRequestCallback);
         }
         
         void OnRequestCallback(AsyncGPUReadbackRequest request)
@@ -89,6 +102,8 @@ namespace UnityEngine.Rendering.Universal
     
     public class HZBOcclusionData : IDisposable
     {
+        // Some android devices read back texture too slow on render thread, so we use compute buffer to read back texture.
+        public static readonly bool k_UseComputeBuffer = true;
         public static Dictionary<int, HZBOcclusionData> OcclusionData = new Dictionary<int, HZBOcclusionData>();
         
         public readonly static int k_MaxReadbackBufferCount = Application.isMobilePlatform ? 4 : 3;
@@ -97,6 +112,7 @@ namespace UnityEngine.Rendering.Universal
 
         private int m_CameraInstanceID = 0;
         private RTHandle m_OccluderDepthPyramid;
+        private ComputeBuffer m_DepthPyramidBuffer;
         private int2 m_DepthBufferSize;
 
         public int2 totalSize { get; private set; }
@@ -132,8 +148,6 @@ namespace UnityEngine.Rendering.Universal
             if (math.all(m_DepthBufferSize == depthBufferSize))
                 return;
             
-            m_OccluderDepthPyramid?.Release();
-            m_OccluderDepthPyramid = null;
             ClearData();
             m_DepthBufferSize = depthBufferSize;
             firstDepthMipIndex = 0;
@@ -167,14 +181,22 @@ namespace UnityEngine.Rendering.Universal
                 mipSize.y = (mipSize.y + 1) / 2;
             }
 
-            RenderTextureDescriptor textureDesc =
-                new RenderTextureDescriptor(totalSize.x, totalSize.y, RenderTextureFormat.RFloat, 0, 1)
-                {
-                    enableRandomWrite = true,
-                };
+            if (k_UseComputeBuffer)
+            {
+                m_DepthPyramidBuffer = new ComputeBuffer(totalSize.x * totalSize.y, sizeof(float), ComputeBufferType.Structured);
+            }
+            else
+            {
+                RenderTextureDescriptor textureDesc =
+                    new RenderTextureDescriptor(totalSize.x, totalSize.y, RenderTextureFormat.RFloat, 0, 1)
+                    {
+                        enableRandomWrite = true,
+                    };
 
-            RenderingUtils.ReAllocateIfNeeded(ref m_OccluderDepthPyramid, textureDesc,
-                FilterMode.Point, TextureWrapMode.Clamp);
+                RenderingUtils.ReAllocateIfNeeded(ref m_OccluderDepthPyramid, textureDesc,
+                    FilterMode.Point, TextureWrapMode.Clamp);
+            }
+
             for (int i = 0; i < k_MaxReadbackBufferCount; ++i)
                 m_RingBuffer.Enqueue(new HZBOcclusionFrameData(totalSize));
         }
@@ -184,6 +206,7 @@ namespace UnityEngine.Rendering.Universal
             public static readonly int _SrcDepth = Shader.PropertyToID(nameof(_SrcDepth));
             public static readonly int _DstDepth = Shader.PropertyToID(nameof(_DstDepth));
             public static readonly int _MipCount = Shader.PropertyToID(nameof(_MipCount)); 
+            public static readonly int _DepthPyramidSize = Shader.PropertyToID(nameof(_DepthPyramidSize));
             public static readonly int[] _MipOffsetAndSize = new int[5]; 
 
             static ShaderIDs()
@@ -199,18 +222,24 @@ namespace UnityEngine.Rendering.Universal
                 return false;
 
             m_RingBuffer.Dequeue();
+            var bufferKeyword = new LocalKeyword(shader, "USE_BUFFER");
             var srcKeyword = new LocalKeyword(shader, "USE_SRC");
             var srcIsMsaaKeyword = new LocalKeyword(shader, "SRC_IS_MSAA");
 
             bool srcIsMsaa = cameraDepthTargetHandle?.isMSAAEnabled ?? false;
             int mipCount = firstDepthMipIndex + depthMips;
+            cmd.SetComputeVectorParam(shader, ShaderIDs._DepthPyramidSize, new Vector4(totalSize.x, totalSize.y, 0, 0));
             for (int mipIndexBase = 0; mipIndexBase < mipCount - 1; mipIndexBase += 4)
             {
-                cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._DstDepth, m_OccluderDepthPyramid);
+                if (k_UseComputeBuffer)
+                    cmd.SetComputeBufferParam(shader, kernalIndex, ShaderIDs._DstDepth, m_DepthPyramidBuffer);
+                else
+                    cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._DstDepth, m_OccluderDepthPyramid);
 
                 bool useSrc = (mipIndexBase == 0);
                 cmd.SetKeyword(shader, srcKeyword, useSrc);
                 cmd.SetKeyword(shader, srcIsMsaaKeyword, useSrc && srcIsMsaa);
+                cmd.SetKeyword(shader, bufferKeyword, k_UseComputeBuffer);
                 if (useSrc)
                     cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._SrcDepth, cameraDepthTargetHandle);
 
@@ -244,7 +273,11 @@ namespace UnityEngine.Rendering.Universal
                 cmd.DispatchCompute(shader, kernalIndex, (srcSize.x + 15) / 16, (srcSize.y + 15) / 16, 1);
             }
             
-            frameData.RequestAsyncReadback(cmd, m_OccluderDepthPyramid, ref cameraData);
+            if (k_UseComputeBuffer)
+                frameData.RequestAsyncReadback(cmd, m_DepthPyramidBuffer, ref cameraData);
+            else
+                frameData.RequestAsyncReadback(cmd, m_OccluderDepthPyramid, ref cameraData);
+
             m_RingBuffer.Enqueue(frameData);
             Assert.IsTrue(m_CameraInstanceID == 0 || m_CameraInstanceID == cameraData.camera.GetInstanceID());
             m_CameraInstanceID = cameraData.camera.GetInstanceID();
@@ -260,6 +293,7 @@ namespace UnityEngine.Rendering.Universal
             m_RingBuffer.Clear();
             m_OccluderDepthPyramid?.Release();
             m_OccluderDepthPyramid = null;
+            m_DepthPyramidBuffer?.Dispose();
             OcclusionData.Remove(m_CameraInstanceID);
             m_CameraInstanceID = 0;
         }

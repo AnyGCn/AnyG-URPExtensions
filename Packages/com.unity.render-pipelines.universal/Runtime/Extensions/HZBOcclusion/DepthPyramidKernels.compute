@@ -4,16 +4,23 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
-#pragma multi_compile _ USE_SRC
-#pragma multi_compile _ SRC_IS_MSAA
+#pragma multi_compile_local _ USE_SRC
+#pragma multi_compile_local _ USE_BUFFER
+#pragma multi_compile_local _ SRC_IS_MSAA
 
+uint4 _DepthPyramidSize;
 uint4 _MipOffsetAndSize0;
 uint4 _MipOffsetAndSize1;
 uint4 _MipOffsetAndSize2;
 uint4 _MipOffsetAndSize3;
 uint4 _MipOffsetAndSize4;
 uint _MipCount;
+
+#ifdef USE_BUFFER
+RWStructuredBuffer<float> _DstDepth;
+#else
 RW_TEXTURE2D(float, _DstDepth);
+#endif
 
 #ifdef USE_SRC
     #ifdef SRC_IS_MSAA
@@ -50,6 +57,12 @@ bool IsVisibleAfterOcclusion(float occluderDepth, float queryClosestDepth)
 #endif
 }
 
+#ifdef USE_BUFFER
+#define _DST_DEPTH(coord) _DstDepth[_DepthPyramidSize.x * (coord).y + (coord).x]
+#else
+#define _DST_DEPTH(coord) _DstDepth[(coord)]
+#endif
+
 float LoadDepth(int2 coord)
 {
 #ifdef USE_SRC
@@ -59,7 +72,7 @@ float LoadDepth(int2 coord)
         return _SrcDepth[coord].x;
     #endif
 #else
-    return _DstDepth[coord].x;
+    return _DST_DEPTH(coord);
 #endif
 }
 
@@ -112,7 +125,7 @@ void OccluderDepthDownscale(uint threadID : SV_GroupThreadID, uint3 groupID : SV
 
     // write dst0
     if (all(dstCoord1 < _MipOffsetAndSize1.zw))
-        _DstDepth[_MipOffsetAndSize1.xy + dstCoord1] = farDepth;
+        _DST_DEPTH(_MipOffsetAndSize1.xy + dstCoord1) = farDepth;
 
     // merge towards thread 0 in subgroup size 4
     if (2 <= _MipCount)
@@ -123,7 +136,7 @@ void OccluderDepthDownscale(uint threadID : SV_GroupThreadID, uint3 groupID : SV
         {
             uint2 dstCoord2 = dstCoord1 >> 1;
             if (all(dstCoord2 < _MipOffsetAndSize2.zw))
-                _DstDepth[_MipOffsetAndSize2.xy + dstCoord2] = farDepth;
+                _DST_DEPTH(_MipOffsetAndSize2.xy + dstCoord2) = farDepth;
         }
     }
 
@@ -136,7 +149,7 @@ void OccluderDepthDownscale(uint threadID : SV_GroupThreadID, uint3 groupID : SV
         {
             uint2 dstCoord3 = dstCoord1 >> 2;
             if (all(dstCoord3 < _MipOffsetAndSize3.zw))
-                _DstDepth[_MipOffsetAndSize3.xy + dstCoord3] = farDepth;
+                _DST_DEPTH(_MipOffsetAndSize3.xy + dstCoord3) = farDepth;
         }
     }
 
@@ -149,7 +162,7 @@ void OccluderDepthDownscale(uint threadID : SV_GroupThreadID, uint3 groupID : SV
         {
             uint2 dstCoord4 = dstCoord1 >> 3;
             if (all(dstCoord4 < _MipOffsetAndSize4.zw))
-                _DstDepth[_MipOffsetAndSize4.xy + dstCoord4] = farDepth;
+                _DST_DEPTH(_MipOffsetAndSize4.xy + dstCoord4) = farDepth;
         }
     }
 }
