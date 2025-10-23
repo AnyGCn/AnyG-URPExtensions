@@ -204,7 +204,8 @@ namespace UnityEngine.Rendering.Universal
         private static class ShaderIDs
         {
             public static readonly int _SrcDepth = Shader.PropertyToID(nameof(_SrcDepth));
-            public static readonly int _DstDepth = Shader.PropertyToID(nameof(_DstDepth));
+            public static readonly int _DstDepthBuffer = Shader.PropertyToID(nameof(_DstDepthBuffer));
+            public static readonly int _DstDepthTexture = Shader.PropertyToID(nameof(_DstDepthTexture));
             public static readonly int _MipCount = Shader.PropertyToID(nameof(_MipCount)); 
             public static readonly int _DepthPyramidSize = Shader.PropertyToID(nameof(_DepthPyramidSize));
             public static readonly int[] _MipOffsetAndSize = new int[5]; 
@@ -232,9 +233,9 @@ namespace UnityEngine.Rendering.Universal
             for (int mipIndexBase = 0; mipIndexBase < mipCount - 1; mipIndexBase += 4)
             {
                 if (k_UseComputeBuffer)
-                    cmd.SetComputeBufferParam(shader, kernalIndex, ShaderIDs._DstDepth, m_DepthPyramidBuffer);
+                    cmd.SetComputeBufferParam(shader, kernalIndex, ShaderIDs._DstDepthBuffer, m_DepthPyramidBuffer);
                 else
-                    cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._DstDepth, m_OccluderDepthPyramid);
+                    cmd.SetComputeTextureParam(shader, kernalIndex, ShaderIDs._DstDepthTexture, m_OccluderDepthPyramid);
 
                 bool useSrc = (mipIndexBase == 0);
                 cmd.SetKeyword(shader, srcKeyword, useSrc);

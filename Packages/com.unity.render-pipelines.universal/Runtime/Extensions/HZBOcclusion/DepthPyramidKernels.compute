@@ -16,11 +16,8 @@ uint4 _MipOffsetAndSize3;
 uint4 _MipOffsetAndSize4;
 uint _MipCount;
 
-#ifdef USE_BUFFER
-RWStructuredBuffer<float> _DstDepth;
-#else
-RW_TEXTURE2D(float, _DstDepth);
-#endif
+RWStructuredBuffer<float> _DstDepthBuffer;
+RW_TEXTURE2D(float, _DstDepthTexture);
 
 #ifdef USE_SRC
     #ifdef SRC_IS_MSAA
@@ -58,9 +55,9 @@ bool IsVisibleAfterOcclusion(float occluderDepth, float queryClosestDepth)
 }
 
 #ifdef USE_BUFFER
-#define _DST_DEPTH(coord) _DstDepth[_DepthPyramidSize.x * (coord).y + (coord).x]
+#define _DST_DEPTH(coord) _DstDepthBuffer[_DepthPyramidSize.x * (coord).y + (coord).x]
 #else
-#define _DST_DEPTH(coord) _DstDepth[(coord)]
+#define _DST_DEPTH(coord) _DstDepthTexture[(coord)]
 #endif
 
 float LoadDepth(int2 coord)
