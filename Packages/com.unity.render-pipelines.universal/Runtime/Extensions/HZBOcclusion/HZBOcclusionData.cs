@@ -21,7 +21,8 @@ namespace UnityEngine.Rendering.Universal
         public Matrix4x4 viewProjMatrix { get; private set; }
         public Vector3 viewOriginWorldSpace { get; private set; }
         public Vector3 facingDirWorldSpace { get; private set; }
-        public Vector3 radialDirWorldSpace { get; private set; }
+        public Vector3 radialXDirWorldSpace { get; private set; }
+        public Vector3 radialYDirWorldSpace { get; private set; }
 
         public HZBOcclusionFrameData(int2 textureSize)
         {
@@ -43,8 +44,9 @@ namespace UnityEngine.Rendering.Universal
             viewMatrix.SetColumn(3, new Vector4(0.0f, 0.0f, 0.0f, 1.0f));
             viewProjMatrix = projMatrix * viewMatrix;   // without translation
             viewOriginWorldSpace = viewMatrixInverse.GetColumn(3);
+            radialXDirWorldSpace = ((Vector3)viewMatrixInverse.GetColumn(0)).normalized;
+            radialYDirWorldSpace = ((Vector3)viewMatrixInverse.GetColumn(1)).normalized;
             facingDirWorldSpace = ((Vector3)viewMatrixInverse.GetColumn(2)).normalized;
-            radialDirWorldSpace = ((Vector3)(viewMatrixInverse.GetColumn(0) + viewMatrixInverse.GetColumn(1))).normalized;
             onFlight = true;
             return true;
         }
