@@ -25,9 +25,6 @@ namespace UnityEngine.Rendering.Universal
         private static readonly float[] s_CascadeImportanceList = new float[k_MaxCascades];
         private static readonly int[] s_CascadeIndexPriorList = new int[k_MaxCascades];
         
-        private int m_Width;
-        private int m_Height;
-        private int m_CascadeCount;
         private RTHandle m_CachedCascadeShadowMap;
 
         private readonly int[] m_CascadeUpdateFrameCount = new int[k_MaxCascades];
@@ -40,6 +37,7 @@ namespace UnityEngine.Rendering.Universal
         public int shadowResolution { get; private set; }
         public int renderTargetWidth { get; private set; }
         public int renderTargetHeight { get; private set; }
+        public int cascadeCount { get; private set; }
         public RTHandle cachedCascadeShadowMap => m_CachedCascadeShadowMap;
 
         public bool Init(ref ShadowData shadowData)
@@ -51,19 +49,16 @@ namespace UnityEngine.Rendering.Universal
             }
             
             int width = shadowData.mainLightShadowmapWidth;
-            int height = shadowData.mainLightShadowmapHeight;
-            int cascadeCount = shadowData.mainLightShadowCascadesCount;
+            int height = (shadowData.mainLightShadowCascadesCount == 2) ? shadowData.mainLightShadowmapHeight >> 1 : shadowData.mainLightShadowmapHeight;
             minCachedLevel = shadowData.cachedMainLightShadowMinStaticLevel;
             quality = shadowData.cachedMainlightShadowQuality;
-            if (m_Width != width || m_Height != height || cascadeCount != m_CascadeCount || m_CachedCascadeShadowMap == null)
+            if (renderTargetWidth != width || renderTargetHeight != height || shadowData.mainLightShadowCascadesCount != cascadeCount || m_CachedCascadeShadowMap == null)
             {
-                m_Width = width;
-                m_Height = height;
-                m_CascadeCount = cascadeCount;
-                
-                shadowResolution = ShadowUtils.GetMaxTileResolutionInAtlas(m_Width, m_Height, m_CascadeCount);
-                renderTargetWidth = m_Width;
-                renderTargetHeight = (m_CascadeCount == 2) ? m_Height >> 1 : m_Height;
+                renderTargetWidth = width;
+                renderTargetHeight = height;
+                cascadeCount = shadowData.mainLightShadowCascadesCount;
+                shadowResolution = ShadowUtils.GetMaxTileResolutionInAtlas(shadowData.mainLightShadowmapWidth,
+                    shadowData.mainLightShadowmapHeight, shadowData.mainLightShadowCascadesCount);
 
                 for (int i = 0; i < k_MaxCascades; ++i)
                 {
@@ -81,13 +76,13 @@ namespace UnityEngine.Rendering.Universal
             int shadowLightIndex, float shadowNearPlane, Vector4[] cascadeSplitDistance,
             ShadowSliceData[] shadowSliceData)
         {
-            for (int cascadeIndex = 0; cascadeIndex < m_CascadeCount; ++cascadeIndex)
+            for (int cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex)
                 s_CascadeImportanceList[cascadeIndex] = k_CascadeImportance[cascadeIndex] * Mathf.Max(Time.frameCount - m_CascadeUpdateFrameCount[cascadeIndex], 1);
 
-            for (int cascadeIndex = 0; cascadeIndex < m_CascadeCount; ++cascadeIndex)
+            for (int cascadeIndex = 0; cascadeIndex < cascadeCount; ++cascadeIndex)
             {
                 int prior = 0;
-                for (int compareCascadeIndex = 0; compareCascadeIndex < m_CascadeCount; ++compareCascadeIndex)
+                for (int compareCascadeIndex = 0; compareCascadeIndex < cascadeCount; ++compareCascadeIndex)
                     if (cascadeIndex != compareCascadeIndex && s_CascadeImportanceList[cascadeIndex] < s_CascadeImportanceList[compareCascadeIndex])
                         ++prior;
 
@@ -96,7 +91,7 @@ namespace UnityEngine.Rendering.Universal
 
             cascadeUpdateMask = 0;
             float jobWorkload = 0;
-            for (int prior = 0; prior < m_CascadeCount; ++prior)
+            for (int prior = 0; prior < cascadeCount; ++prior)
             {
                 int cascadeIndex = s_CascadeIndexPriorList[prior];
                 bool success = ShadowUtils.ExtractDirectionalLightMatrix(ref cullResults, ref shadowData,
@@ -137,7 +132,7 @@ namespace UnityEngine.Rendering.Universal
 
         public bool AllocateTargets()
         {
-            return ShadowUtils.ShadowRTReAllocateIfNeeded(ref m_CachedCascadeShadowMap, m_Width, m_Height,
+            return ShadowUtils.ShadowRTReAllocateIfNeeded(ref m_CachedCascadeShadowMap, renderTargetWidth, renderTargetHeight,
                 k_ShadowmapBufferBits, name: k_CachedShadowMapTextureName);
         }
 
