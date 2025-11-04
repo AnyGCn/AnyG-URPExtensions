@@ -332,12 +332,53 @@ float4 TransformWorldToShadowCoord(float3 positionWS)
     return shadowCoord;
 }
 
+float Linstep(float a, float b, float v)
+{
+    return saturate((v - a) / (b - a));
+}
+
+// 令[0, amount]的部分归零并将(amount, 1]重新映射到(0, 1]
+float ReduceLightBleeding(float pMax, float amount)
+{
+    return Linstep(amount, 1.0f, pMax);
+}
+
+float ChebyshevUpperBound(float2 moments, 
+                          float receiverDepth, 
+                          float minVariance, 
+                          float lightBleedingReduction)
+{
+    float variance = moments.y - (moments.x * moments.x);
+    variance = max(variance, minVariance); // 防止0除
+    
+    float d = receiverDepth - moments.x;
+    float p_max = variance / (variance + d * d);
+
+    // reduce light bleeding
+    // p_max = ReduceLightBleeding(p_max, lightBleedingReduction);
+    
+    // 单边切比雪夫
+    return (receiverDepth >= moments.x ? 1.0f : p_max);
+}
+
+#define _VARIANCE_SHADOWMAP 1
+TEXTURE2D(_VarianceShadowmapTexture);
+SAMPLER(sampler_VarianceShadowmapTexture);
+
+float CalculateVarianceShadow(float4 shadowCoord)
+{
+    float2 moments = SAMPLE_TEXTURE2D_LOD(_VarianceShadowmapTexture, sampler_VarianceShadowmapTexture, shadowCoord.xy, 0);
+    return ChebyshevUpperBound(moments, shadowCoord.z, 0.00001f, 0);
+}
+
 half MainLightRealtimeShadow(float4 shadowCoord)
 {
     #if !defined(MAIN_LIGHT_CALCULATE_SHADOWS)
         return half(1.0);
     #elif defined(_MAIN_LIGHT_SHADOWS_SCREEN) && !defined(_SURFACE_TYPE_TRANSPARENT)
         return SampleScreenSpaceShadowmap(shadowCoord);
+    #elif defined(_VARIANCE_SHADOWMAP)
+        return CalculateVarianceShadow(shadowCoord);
     #else
         ShadowSamplingData shadowSamplingData = GetMainLightShadowSamplingData();
         half4 shadowParams = GetMainLightShadowParams();

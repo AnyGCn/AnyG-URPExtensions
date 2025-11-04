@@ -41,6 +41,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         Matrix4x4[] m_MainLightShadowMatrices;
         ShadowSliceData[] m_CascadeSlices;
         Vector4[] m_CascadeSplitDistances;
+        VarianceShadowMapRenderPass m_VarianceShadowMapRenderPass;
 
         bool m_CreateEmptyShadowmap;
         bool m_CachedMode = false;
@@ -55,7 +56,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         /// </summary>
         /// <param name="evt">The <c>RenderPassEvent</c> to use.</param>
         /// <seealso cref="RenderPassEvent"/>
-        public MainLightShadowCasterPass(RenderPassEvent evt)
+        public MainLightShadowCasterPass(RenderPassEvent evt, Material varianceShadowMapMaterial = null)
         {
             base.profilingSampler = new ProfilingSampler(nameof(MainLightShadowCasterPass));
             renderPassEvent = evt;
@@ -78,6 +79,7 @@ namespace UnityEngine.Rendering.Universal.Internal
             m_MainLightShadowmapID = Shader.PropertyToID(k_MainLightShadowMapTextureName);
 
             m_EmptyMainLightShadowmapTexture = RTHandles.Alloc(Texture2D.blackTexture);
+            m_VarianceShadowMapRenderPass = new VarianceShadowMapRenderPass(varianceShadowMapMaterial);
         }
 
         /// <summary>
@@ -87,6 +89,7 @@ namespace UnityEngine.Rendering.Universal.Internal
         {
             m_MainLightShadowmapTexture?.Release();
             m_EmptyMainLightShadowmapTexture?.Release();
+            m_VarianceShadowMapRenderPass?.Dispose();
         }
 
         /// <summary>
@@ -173,6 +176,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                 ShadowUtils.ShadowRTReAllocateIfNeeded(ref m_MainLightShadowmapTexture, renderTargetWidth, renderTargetHeight, k_ShadowmapBufferBits, name: k_MainLightShadowMapTextureName);
             }
 
+            m_VarianceShadowMapRenderPass.Setup(renderTargetWidth, renderTargetHeight);
             m_MaxShadowDistanceSq = renderingData.cameraData.maxShadowDistance * renderingData.cameraData.maxShadowDistance;
             m_CascadeBorder = renderingData.shadowData.mainLightShadowCascadeBorder;
             m_CreateEmptyShadowmap = false;
@@ -289,6 +293,7 @@ namespace UnityEngine.Rendering.Universal.Internal
                         ref settings, m_CascadeSlices[cascadeIndex].projectionMatrix, m_CascadeSlices[cascadeIndex].viewMatrix, shadowData.cachedMainlightShadowEnabled);
                 }
 
+                m_VarianceShadowMapRenderPass.Render(cmd, m_MainLightShadowmapTexture, m_ShadowCasterCascadesCount, m_CascadeSlices);
                 renderingData.shadowData.isKeywordSoftShadowsEnabled = shadowLight.light.shadows == LightShadows.Soft && renderingData.shadowData.supportsSoftShadows;
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadows, renderingData.shadowData.mainLightShadowCascadesCount == 1);
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.MainLightShadowCascades, renderingData.shadowData.mainLightShadowCascadesCount > 1);

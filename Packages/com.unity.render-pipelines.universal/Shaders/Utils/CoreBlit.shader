@@ -339,6 +339,40 @@ Shader "Hidden/Universal/CoreBlit"
             }
             ENDHLSL
         }
+
+        // 25: Copy variance shadowmap from shadowmap
+        Pass
+        {
+            Name "VarianceShadowmap"
+            ZWrite Off ZTest Always Blend Off Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Fragment
+
+            #pragma enable_d3d11_debug_symbols
+
+            float4 _BlitTexture_ST;
+            #define _BLUR_SIZE 2
+            float2 Fragment(Varyings input) : SV_Target
+            {
+                float2 leftBottom = _BlitScaleBias.zw;
+                float2 rightTop = _BlitScaleBias.xy + _BlitScaleBias.zw;
+                float2 moment = 0.0f;
+                for (int i = -_BLUR_SIZE; i <= _BLUR_SIZE; ++i)
+                {
+                    for (int j = -_BLUR_SIZE; j <= _BLUR_SIZE; ++j)
+                    {
+                        float2 uv = clamp(input.texcoord + float2(i, j) * _BlitTexture_ST.zw, leftBottom, rightTop);
+                        float shadow = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, uv, 0).x;
+                        moment += float2(shadow, shadow * shadow);
+                    }
+                }
+                
+                return moment / ((2 * _BLUR_SIZE + 1) * (2 * _BLUR_SIZE + 1));
+            }
+            ENDHLSL
+        }
     }
 
     Fallback Off
