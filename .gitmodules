@@ -1,9 +1,12 @@
 [submodule "Packages/Shadalyze"]
 	path = Packages/Shadalyze
 	url = git@github.com:AnyGCn/Unity-Malioc-Shadalyze.git
+	branch = main
 [submodule "Packages/com.unity.render-pipelines.universal/Plugins/.source"]
 	path = Packages/com.unity.render-pipelines.universal/Plugins/.source
 	url = git@github.com:AnyGCn/NativeRenderingPlugin.git
+	branch = master
 [submodule "Packages/BrgRenderSystem"]
 	path = Packages/BrgRenderSystem
 	url = git@github.com:AnyGCn/BrgRenderSystem.git
+	branch = main
