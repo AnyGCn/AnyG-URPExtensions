@@ -1466,9 +1466,8 @@ namespace UnityEngine.Rendering.Universal
                             }
 
                             case ImageUpscalingFilter.FSR:
+                            case ImageUpscalingFilter.SGSR1:
                             {
-                                m_Materials.easu.shaderKeywords = null;
-
                                 var upscaleRtDesc = cameraData.cameraTargetDescriptor;
                                 upscaleRtDesc.msaaSamples = 1;
                                 upscaleRtDesc.depthBufferBits = 0;
@@ -1477,11 +1476,22 @@ namespace UnityEngine.Rendering.Universal
 
                                 // EASU
                                 RenderingUtils.ReAllocateIfNeeded(ref m_UpscaledTarget, upscaleRtDesc, FilterMode.Point, TextureWrapMode.Clamp, name: "_UpscaledTexture");
-                                var fsrInputSize = new Vector2(cameraData.cameraTargetDescriptor.width, cameraData.cameraTargetDescriptor.height);
-                                var fsrOutputSize = new Vector2(cameraData.pixelWidth, cameraData.pixelHeight);
-                                FSRUtils.SetEasuConstants(cmd, fsrInputSize, fsrInputSize, fsrOutputSize);
 
-                                Blitter.BlitCameraTexture(cmd, sourceTex, m_UpscaledTarget, colorLoadAction, RenderBufferStoreAction.Store, m_Materials.easu, 0);
+                                Material upscaleMaterial;
+                                if (cameraData.upscalingFilter == ImageUpscalingFilter.FSR)
+                                {
+                                    m_Materials.easu.shaderKeywords = null;
+                                    var fsrInputSize = new Vector2(cameraData.cameraTargetDescriptor.width, cameraData.cameraTargetDescriptor.height);
+                                    var fsrOutputSize = new Vector2(cameraData.pixelWidth, cameraData.pixelHeight);
+                                    FSRUtils.SetEasuConstants(cmd, fsrInputSize, fsrInputSize, fsrOutputSize);
+                                    upscaleMaterial = m_Materials.easu;
+                                }
+                                else
+                                {
+                                    upscaleMaterial = m_Materials.sgsr1;
+                                }
+
+                                Blitter.BlitCameraTexture(cmd, sourceTex, m_UpscaledTarget, colorLoadAction, RenderBufferStoreAction.Store, upscaleMaterial, 0);
 
                                 // RCAS
                                 // Use the override value if it's available, otherwise use the default.
@@ -1568,6 +1578,7 @@ namespace UnityEngine.Rendering.Universal
             public readonly Material uber;
             public readonly Material finalPass;
             public readonly Material lensFlareDataDriven;
+            public readonly Material sgsr1;
 
             public MaterialLibrary(PostProcessData data)
             {
@@ -1588,6 +1599,7 @@ namespace UnityEngine.Rendering.Universal
                 uber = Load(data.shaders.uberPostPS);
                 finalPass = Load(data.shaders.finalPostPassPS);
                 lensFlareDataDriven = Load(data.shaders.LensFlareDataDrivenPS);
+                sgsr1 = Load(data.shaders.sgsr1PS);
             }
 
             Material Load(Shader shader)

@@ -73,7 +73,10 @@ namespace UnityEngine.Rendering.Universal
         Point,
 
         /// FidelityFX Super Resolution
-        FSR
+        FSR,
+
+        /// Snapdragon Game Super Resolution
+        SGSR1,
     }
 
     /// <summary>
