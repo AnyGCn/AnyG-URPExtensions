@@ -33,7 +33,6 @@
 ////////////////////////
 
 // ///////SGSR_GL_Mobile.frag/////////////////////////////////////////
-#if defined(SGSR_MOBILE)
 half fastLanczos2(half x)
 {
 	half wA = x- half(4.0);
@@ -156,5 +155,4 @@ void SgsrYuvH(
 	pix.w = 1.0;  //assume alpha channel is not used
 
 }
-#endif
 ////////////////////////////////////////////////////////////////////////

@@ -142,6 +142,12 @@ namespace UnityEngine.Rendering.Universal
             /// </summary>
             [Reload("Runtime/Extensions/SRExtensions/Shader/sgsr1.shader")]
             public Shader sgsr1PS;
+            
+            /// <summary>
+            /// The Snapdragon Game Super Resolution 1 shader.
+            /// </summary>
+            [Reload("Runtime/Extensions/SRExtensions/Shader/sgsr2.shader")]
+            public Shader sgsr2PS;
         }
 
         /// <summary>

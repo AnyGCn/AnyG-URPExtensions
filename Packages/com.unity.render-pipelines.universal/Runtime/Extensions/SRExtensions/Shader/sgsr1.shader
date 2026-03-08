@@ -17,11 +17,11 @@ Shader "Hidden/Universal Render Pipeline/Extensions/SGSR1"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
 
+            // UseEdgeDirection could have a better 
+            #pragma multi_compile_local_fragment _ UseEdgeDirection
             #pragma vertex Vert
             #pragma fragment FragSGSR
             #pragma target 4.5
-
-            #define SGSR_MOBILE
 
             half4 SGSRRH(float2 p)
             {
