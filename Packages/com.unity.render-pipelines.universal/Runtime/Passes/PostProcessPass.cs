@@ -1579,6 +1579,7 @@ namespace UnityEngine.Rendering.Universal
             public readonly Material finalPass;
             public readonly Material lensFlareDataDriven;
             public readonly Material sgsr1;
+            public readonly Material sgsr2;
 
             public MaterialLibrary(PostProcessData data)
             {
@@ -1600,6 +1601,7 @@ namespace UnityEngine.Rendering.Universal
                 finalPass = Load(data.shaders.finalPostPassPS);
                 lensFlareDataDriven = Load(data.shaders.LensFlareDataDrivenPS);
                 sgsr1 = Load(data.shaders.sgsr1PS);
+                sgsr2 = Load(data.shaders.sgsr2PS);
             }
 
             Material Load(Shader shader)

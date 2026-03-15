@@ -84,6 +84,21 @@ namespace UnityEngine.Rendering.Universal
         /// Snapdragon Game Super Resolution 2
         /// </summary>
         SGSR2,
+        
+        /// <summary>
+        /// NVIDIA Deep Learning Super Sampling
+        /// </summary>
+        DLSS,
+        
+        /// <summary>
+        /// Metal FX Spatial Upsampling
+        /// </summary>
+        MetalFXSpatial,
+        
+        /// <summary>
+        /// Metal FX Temporal Upsampling
+        /// </summary>
+        MetalFXTemporal,
     }
 
     /// <summary>

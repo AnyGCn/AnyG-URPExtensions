@@ -1562,7 +1562,7 @@ namespace UnityEngine.Rendering.Universal
 
         private static void UpdateTemporalAATargets(ref CameraData cameraData)
         {
-            if (cameraData.IsTemporalAAEnabled())
+            if (cameraData.IsTemporalAAEnabled() && cameraData.upscalingFilter != ImageUpscalingFilter.DLSS)
             {
                 bool xrMultipassEnabled = false;
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -1810,6 +1810,37 @@ namespace UnityEngine.Rendering.Universal
                 {
                     filter = isTemporalAAEnabled ? ImageUpscalingFilter.SGSR2 : ImageUpscalingFilter.SGSR1;
 
+                    break;
+                }
+
+                case UpscalingFilterSelection.DLSS:
+                {
+                    // TODO: DLSS Support.
+                    bool isDLSSSupported = false;
+                    filter = isTemporalAAEnabled
+                        ? (isDLSSSupported ? ImageUpscalingFilter.DLSS : ImageUpscalingFilter.SGSR2)
+                        : ImageUpscalingFilter.FSR;
+                    
+                    break;
+                }
+
+                case UpscalingFilterSelection.MetalFXSpatial:
+                {
+                    // TODO: MetalFX Support.
+                    bool isMetalFXSupported = false;
+                    filter = isMetalFXSupported ? ImageUpscalingFilter.MetalFXSpatial : ImageUpscalingFilter.SGSR1;
+
+                    break;
+                }
+
+                case UpscalingFilterSelection.MetalFXTemporal:
+                {
+                    // TODO: MetalFX Support.
+                    bool isMetalFXSupported = false;
+                    filter = isTemporalAAEnabled
+                        ? (isMetalFXSupported ? ImageUpscalingFilter.MetalFXTemporal : ImageUpscalingFilter.SGSR2)
+                        : (isMetalFXSupported ? ImageUpscalingFilter.MetalFXSpatial : ImageUpscalingFilter.SGSR1);
+                    
                     break;
                 }
             }
