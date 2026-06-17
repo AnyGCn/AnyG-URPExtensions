@@ -1634,6 +1634,8 @@ namespace UnityEngine.Rendering.Universal
                 CoreUtils.Destroy(uber);
                 CoreUtils.Destroy(finalPass);
                 CoreUtils.Destroy(lensFlareDataDriven);
+                CoreUtils.Destroy(sgsr1);
+                CoreUtils.Destroy(sgsr2);
             }
         }
 
