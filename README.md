@@ -1,15 +1,49 @@
 # AnyG-URPExtensions
-Develop for Unity 2022 URP Extension Package.
 
-# Feature
-## Cached Mainlight Shadowmap
-Reduce the update frequency of cascade shadow map, cut down most drawcall and triangles rendering by shadowmap.
+Unity 2022.3 URP extension repository based on the official `com.unity.render-pipelines.universal` package.
 
-## Shadalyze
-Convenient android-glsl compiled code and analysis report inspector for develop. There are too many performance-affecting hidden rules, such as half problem. You can use this tool to edit your shader to reach highest performance.
+The goal of this repo is to keep URP as the base renderer while adding production-focused rendering extensions for performance experiments and mobile/desktop feature work.
 
-## Batch Renderer Group Render System
-Light-weight ECS Render System in Unity2022 (developed referring to gpu resident drawer in Unity6), You can use it by adding a component to every renderer in your scene, it can save much cpu time from the submit of render node in main thread and the submit of drawcall in render thread. And with Hiz Occlusion Culling, you can also have some gpu benefit.
+## What is included
 
-## More Choice of Super resolution
-MetalFX, SGSR and DLSS will be merged in this repo in near future.
+- Cached Main Light Shadow Map
+  - Reduces the update frequency of cascade shadow maps to save draw calls and triangle submissions.
+- HZB Occlusion Culling
+  - Hierarchical Z buffer based occlusion workflow for scene culling.
+- Batch Renderer Group Render System
+  - A lightweight ECS-oriented rendering pipeline for large numbers of static or rarely changed renderers.
+- Shadalyze
+  - Android GLSL shader performance analysis tooling powered by Mali Offline Compiler.
+- Super Resolution extensions
+  - Snapdragon Game Super Resolution 1: a color-input-only upscaler.
+  - Snapdragon Game Super Resolution 2: a TAAU-based improvement path built on top of SGSR work.
+
+## Environment
+
+- Unity `2022.3.62f1`
+- URP `14.0.12`
+- Package-based project layout under `Packages/com.unity.render-pipelines.universal`
+
+## Repository Layout
+
+- `Packages/com.unity.render-pipelines.universal`
+  - Forked URP package with the rendering changes and extension code.
+- `Packages/BrgRenderSystem`
+  - BRG-based renderer and related documentation.
+- `Packages/Shadalyze`
+  - Shader analysis tooling and references.
+
+## Getting Started
+
+1. Open the project in Unity `2022.3.62f1`.
+2. Let Unity import the embedded packages under `Packages/`.
+3. Review the module-specific documentation before enabling a feature:
+   - [BRG Render System](Packages/BrgRenderSystem/README.md)
+   - [Shadalyze](Packages/Shadalyze/README.md)
+
+## Notes
+
+- The URP package in this repository is modified from the official package, so merge/upstream work should be done carefully.
+- Several extensions are feature-specific and may require additional scene setup, renderer features, or platform support.
+- If you only want one module, start from the package-local README instead of the root overview.
+- Shared repository memory lives in [AGENTS.md](AGENTS.md).
