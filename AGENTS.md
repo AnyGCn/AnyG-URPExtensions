@@ -35,4 +35,7 @@ This file captures durable, shareable repository memory for future contributors 
 - Open the project with Unity `2022.3.62f1`.
 - Let Unity import embedded packages under `Packages/`.
 - Review module-local documentation before enabling a feature or changing rendering behavior.
+- After changing `.cs` files, use the Unity MCP diagnostic tools to check editor state and C# compilation errors before reporting success.
+- After changing `.shader`, `.hlsl`, `.compute`, or Shader Graph assets, inspect Unity Console logs via MCP because shader compiler errors are reported there.
+- Keep Unity MCP use diagnostic-first; do not use scene, asset, or prefab mutation tools unless the user explicitly asks for that workflow.
 - Prefer updating this file only when a fact is stable enough to be reused across sessions.

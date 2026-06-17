@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.anklebreaker.unity-mcp": {
+      "version": "https://github.com/AnkleBreaker-Studio/unity-mcp-plugin.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "55cd393fe53c4ed7ee9a38124b4d8e5f05f5a323"
+    },
     "com.anyg.brg-rendersystem": {
       "version": "file:BrgRenderSystem",
       "depth": 0,
