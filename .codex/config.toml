@@ -1,0 +1,32 @@
+[mcp_servers.unity]
+command = "/opt/homebrew/bin/npx"
+args = ["-y", "anklebreaker-unity-mcp@latest"]
+enabled = true
+startup_timeout_sec = 20
+tool_timeout_sec = 90
+enabled_tools = [
+  "unity_list_instances",
+  "unity_select_instance",
+  "unity_editor_ping",
+  "unity_editor_state",
+  "unity_project_info",
+  "unity_console_log",
+  "unity_console_clear",
+  "unity_get_compilation_errors",
+  "unity_testing_list_tests",
+  "unity_testing_run_tests",
+  "unity_testing_get_job",
+  "unity_list_advanced_tools",
+  "unity_advanced_tool",
+]
+
+[mcp_servers.unity.env]
+UNITY_BRIDGE_PORT = "7891"
+UNITY_HUB_PATH = "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub"
+NPM_CONFIG_CACHE = "/private/tmp/urpextensions-npm-cache"
+
+[mcp_servers.unity.tools.unity_console_log]
+approval_mode = "approve"
+
+[mcp_servers.unity.tools.unity_console_clear]
+approval_mode = "approve"

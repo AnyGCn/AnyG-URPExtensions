@@ -38,4 +38,6 @@ This file captures durable, shareable repository memory for future contributors 
 - After changing `.cs` files, use the Unity MCP diagnostic tools to check editor state and C# compilation errors before reporting success.
 - After changing `.shader`, `.hlsl`, `.compute`, or Shader Graph assets, inspect Unity Console logs via MCP because shader compiler errors are reported there.
 - Keep Unity MCP use diagnostic-first; do not use scene, asset, or prefab mutation tools unless the user explicitly asks for that workflow.
+- For all edits, follow a minimal-modification principle: do not remove unused globals, legacy parameters, comments, code structure, assets, or metadata only as cleanup. Remove or restructure them only when explicitly requested or required to fix a concrete issue.
+- When a durable memory update is relevant to this repository, mirror the shareable part into this file so future contributors can see it without relying on personal memory.
 - Prefer updating this file only when a fact is stable enough to be reused across sessions.

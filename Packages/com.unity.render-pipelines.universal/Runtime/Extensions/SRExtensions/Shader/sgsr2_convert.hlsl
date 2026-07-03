@@ -18,6 +18,16 @@ float                  minLerpContribution;
 float                  reset;
 uint                   bSameCamera;
 
+#if UNITY_REVERSED_Z
+#define NEAREST_DEPTH(a, b) max(a, b)
+#define DEPTH_SEPARATION_BASE(depth) depth
+#define HAS_VALID_DEPTH(depth) ((depth) > 1.0e-05)
+#else
+#define NEAREST_DEPTH(a, b) min(a, b)
+#define DEPTH_SEPARATION_BASE(depth) (1.0 - (depth))
+#define HAS_VALID_DEPTH(depth) ((depth) < 1.0 - 1.0e-05)
+#endif
+
 float2 decodeVelocityFromTexture(float2 ev) {
     const float inv_div = 1.0f / (0.499f * 0.5f);
     float2 dv;
@@ -49,16 +59,16 @@ half SnapdragonGameSuperResolutionConvertPass(float2 texCoord)
 	float4 topLeft = GATHER_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, (gatherCoord+v12));
 	float2 v14 = float2(renderSizeRcp.x * 2.0f, renderSizeRcp.y * 2.0f);
 	float4 topRight = GATHER_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, (gatherCoord+v14));
-	float maxC = min(min(min(btmLeft.z,btmRight.w),topLeft.y),topRight.x);
-	float btmLeft4 = min(min(min(btmLeft.y,btmLeft.x),btmLeft.z),btmLeft.w);
-	float btmLeftMax9 = min(topLeft.x,min(min(maxC,btmLeft4),btmRight.x));
+	float centerDepth = NEAREST_DEPTH(NEAREST_DEPTH(NEAREST_DEPTH(btmLeft.z, btmRight.w), topLeft.y), topRight.x);
+	float btmLeft4 = NEAREST_DEPTH(NEAREST_DEPTH(NEAREST_DEPTH(btmLeft.y, btmLeft.x), btmLeft.z), btmLeft.w);
+	float btmLeftMax9 = NEAREST_DEPTH(topLeft.x, NEAREST_DEPTH(NEAREST_DEPTH(centerDepth, btmLeft4), btmRight.x));
 
     float depthclip = 0.0;
-    if (maxC < 1.0 - 1.0e-05f)
+    if (HAS_VALID_DEPTH(centerDepth))
     {
-        float btmRight4 = min(min(min(btmRight.y,btmRight.x),btmRight.z),btmRight.w);
-        float topLeft4 = min(min(min(topLeft.y,topLeft.x),topLeft.z),topLeft.w);
-        float topRight4 = min(min(min(topRight.y,topRight.x),topRight.z),topRight.w);
+        float btmRight4 = NEAREST_DEPTH(NEAREST_DEPTH(NEAREST_DEPTH(btmRight.y, btmRight.x), btmRight.z), btmRight.w);
+        float topLeft4 = NEAREST_DEPTH(NEAREST_DEPTH(NEAREST_DEPTH(topLeft.y, topLeft.x), topLeft.z), topLeft.w);
+        float topRight4 = NEAREST_DEPTH(NEAREST_DEPTH(NEAREST_DEPTH(topRight.y, topRight.x), topRight.z), topRight.w);
 
         float Wdepth = 0.0;
         float Ksep = 1.37e-05f;
@@ -66,12 +76,12 @@ half SnapdragonGameSuperResolutionConvertPass(float2 texCoord)
         float diagonal_length = length(renderSize);
         float Ksep_Kfov_diagonal = Ksep * Kfov * diagonal_length;
 
-		float Depthsep = Ksep_Kfov_diagonal * (1.0 - maxC);
+		float Depthsep = Ksep_Kfov_diagonal * DEPTH_SEPARATION_BASE(centerDepth);
 		float EPSILON = 1.19e-07f;
-		Wdepth += clamp((Depthsep / (abs(maxC - btmLeft4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - btmRight4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - topLeft4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - topRight4) + EPSILON)), 0.0, 1.0);
+		Wdepth += clamp((Depthsep / (abs(centerDepth - btmLeft4) + EPSILON)), 0.0, 1.0);
+		Wdepth += clamp((Depthsep / (abs(centerDepth - btmRight4) + EPSILON)), 0.0, 1.0);
+		Wdepth += clamp((Depthsep / (abs(centerDepth - topLeft4) + EPSILON)), 0.0, 1.0);
+		Wdepth += clamp((Depthsep / (abs(centerDepth - topRight4) + EPSILON)), 0.0, 1.0);
         depthclip = clamp(1.0f - Wdepth * 0.25, 0.0, 1.0);
     }
 
@@ -99,5 +109,4 @@ half SnapdragonGameSuperResolutionConvertPass(float2 texCoord)
 //         motion = Position.xy - PreScreen;
 //     }
 //     MotionDepthClipAlphaBuffer = vec4(motion, depthclip, 0.0);
-
 }

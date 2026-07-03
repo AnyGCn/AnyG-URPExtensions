@@ -38,6 +38,7 @@ Shader "Hidden/Universal Render Pipeline/Extensions/SGSR2"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/Common.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/PostProcessing/TemporalAA.hlsl"
 
             #pragma vertex Vert
             #pragma fragment FragSGSR

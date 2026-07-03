@@ -14,11 +14,7 @@ half FastLanczos(half base)
 	return y_temp * y2;
 }
 
-TEXTURE2D(_PrevOutput);
-SAMPLER(sampler_PrevOutputSampler);
-TEXTURE2D(_MotionDepthClipAlphaBuffer);
-SAMPLER(sampler_MotionDepthClipAlphaBufferSampler);
-TEXTURE2D(InputColor);
+TEXTURE2D_X(_DepthClipTexture);
 
 float4                 clipToPrevClip[4];
 float2                 renderSize;
@@ -45,20 +41,13 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
 
     int2 InputPos = int2(Jitteruv * renderSize);
 
-    float3 mda = SAMPLE_TEXTURE2D_LOD(_MotionDepthClipAlphaBuffer, sampler_MotionDepthClipAlphaBufferSampler, Jitteruv, 0.0).xyz;
-    float2 Motion = mda.xy;
+    half2 Motion = GetVelocityWithOffset(Jitteruv, 0.0);
+    half depthfactor = SAMPLE_TEXTURE2D_X_LOD(_DepthClipTexture, sampler_LinearClamp, Jitteruv, 0.0).r;
 
     float2 PrevUV;
-    PrevUV.x = clamp(-0.5 * Motion.x + Hruv.x, 0.0, 1.0);
-#ifdef REQUEST_NDC_Y_UP
-    PrevUV.y = clamp(0.5 * Motion.y + Hruv.y, 0.0, 1.0);
-#else
-    PrevUV.y = clamp(-0.5 * Motion.y + Hruv.y, 0.0, 1.0);
-#endif
+    PrevUV.xy = clamp(Hruv + Motion, 0.0, 1.0);
 
-    half depthfactor = mda.z;
-
-    half3 HistoryColor = SAMPLE_TEXTURE2D_LOD(_PrevOutput, sampler_PrevOutputSampler, PrevUV, 0.0).xyz;
+    half3 HistoryColor = SAMPLE_TEXTURE2D_X_LOD(_TaaAccumulationTex, sampler_LinearClamp, PrevUV, 0.0).xyz;
 
     /////upsample and compute box
     half4 Upsampledcw = 0.0;
@@ -79,7 +68,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
     half2 srcpos_srcOutputPos = srcpos - Hruv * renderSize;  //srcOutputPos = Hruv * renderSize;
     half3 rectboxmin;
     half3 rectboxmax;
-    half3 topMid = LOAD_TEXTURE2D(InputColor, InputPos + int2(0, 1)).xyz;
+    half3 topMid = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(0, 1)).xyz;
     {
 
         half3 samplecolor = topMid;
@@ -96,7 +85,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
         rectboxvar += (samplecolor * wsample);
         rectboxweight += boxweight;
     }
-    half3 rightMid = LOAD_TEXTURE2D(InputColor, InputPos + int2(1, 0)).xyz;
+    half3 rightMid = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(1, 0)).xyz;
     {
 
         half3 samplecolor = rightMid;
@@ -113,7 +102,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
         rectboxvar += (samplecolor * wsample);
         rectboxweight += boxweight;
     }
-    half3 leftMid = LOAD_TEXTURE2D(InputColor, InputPos + int2(-1, 0)).xyz;
+    half3 leftMid = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(-1, 0)).xyz;
     {
 
         half3 samplecolor = leftMid;
@@ -130,7 +119,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
         rectboxvar += (samplecolor * wsample);
         rectboxweight += boxweight;
     }
-    half3 centerMid = LOAD_TEXTURE2D(InputColor, InputPos + int2(0, 0)).xyz;
+    half3 centerMid = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(0, 0)).xyz;
     {
 
         half3 samplecolor = centerMid;
@@ -147,7 +136,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
         rectboxvar += (samplecolor * wsample);
         rectboxweight += boxweight;
     }
-    half3 btmMid = LOAD_TEXTURE2D(InputColor, InputPos + int2(0, -1)).xyz;
+    half3 btmMid = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(0, -1)).xyz;
     {
 
         half3 samplecolor = btmMid;
@@ -169,7 +158,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
     if (false)  //maybe disable this for ultra performance, true could generate more realistic output
     {
         {
-            half3 topRight = LOAD_TEXTURE2D(InputColor, InputPos + int2(1, 1)).xyz;
+            half3 topRight = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(1, 1)).xyz;
             half3 samplecolor = topRight;
             half2 baseoffset = srcpos_srcOutputPos + half2(1.0, 1.0);
             half baseoffset_dot = dot(baseoffset, baseoffset);
@@ -185,7 +174,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
             rectboxweight += boxweight;
         }
         {
-            half3 topLeft = LOAD_TEXTURE2D(InputColor, InputPos + int2(-1, 1)).xyz;
+            half3 topLeft = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(-1, 1)).xyz;
             half3 samplecolor = topLeft;
             half2 baseoffset = srcpos_srcOutputPos + half2(-1.0, 1.0);
             half baseoffset_dot = dot(baseoffset, baseoffset);
@@ -201,7 +190,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
             rectboxweight += boxweight;
         }
         {
-            half3 btmRight = LOAD_TEXTURE2D(InputColor, InputPos + int2(1, -1)).xyz;
+            half3 btmRight = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(1, -1)).xyz;
             half3 samplecolor = btmRight;
             half2 baseoffset = srcpos_srcOutputPos + half2(1.0, -1.0);
             half baseoffset_dot = dot(baseoffset, baseoffset);
@@ -218,7 +207,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
         }
 
         {
-            half3 btmLeft = LOAD_TEXTURE2D(InputColor, InputPos + int2(-1, -1)).xyz;
+            half3 btmLeft = LOAD_TEXTURE2D_X(_BlitTexture, InputPos + int2(-1, -1)).xyz;
             half3 samplecolor = btmLeft;
             half2 baseoffset = srcpos_srcOutputPos + half2(-1.0, -1.0);
             half baseoffset_dot = dot(baseoffset, baseoffset);
@@ -259,7 +248,7 @@ half4 SnapdragonGameSuperResolutionUpscalePass(float2 texCoord)
 
     half3 clampedcolor = clamp(HistoryColor, rectboxmin, rectboxmax);
     half startLerpValue = minLerpContribution;
-    if ((abs(mda.x) + abs(mda.y)) > 0.000001) startLerpValue = 0.0;
+    if ((abs(Motion.x) + abs(Motion.y)) > 0.000001) startLerpValue = 0.0;
     half lerpcontribution = (any(rectboxmin > HistoryColor) || any(HistoryColor > rectboxmax)) ? startLerpValue : 1.0;
 
     HistoryColor = lerp(clampedcolor, HistoryColor, clamp(lerpcontribution, 0.0, 1.0));
