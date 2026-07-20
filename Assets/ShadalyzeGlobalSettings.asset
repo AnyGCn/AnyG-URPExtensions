@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30fa6d0084577384e9933caa73589fd9, type: 3}
   m_Name: ShadalyzeGlobalSettings
   m_EditorClassIdentifier: 
-  baselineDevice: 6
+  analysisApi: 0
   shaderAnalysisLevel: 0
-  analysisLightMode:
-  - UniversalForward
-  - UniversalGBuffer
+  maliocWorkerCount: 4
+  analysisLightMode: []
